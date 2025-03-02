@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalles del Tractocamion</title>
+</head>
+<body>
+    <h1>Detalles del Tractocamion</h1>
+    <p>Marca: {{ tractocamion.MARCA }}</p>
+    <p>Modelo: {{ tractocamion.MODELO }}</p>
+    <p>Placa: {{ tractocamion.PLACA }}</p>
+
+    <h2>Agregar Viaje</h2>
+    <form action="/viajes" method="POST">
+        <label for="destino">Destino:</label>
+        <input type="text" id="destino" name="destino" required><br><br>
+        
+        <label for="fecha_salida">Fecha de Salida:</label>
+        <input type="date" id="fecha_salida" name="fecha_salida" required><br><br>
+        
+        <label for="fecha_llegada">Fecha de Llegada:</label>
+        <input type="date" id="fecha_llegada" name="fecha_llegada" required><br><br>
+        
+        <input type="hidden" name="id_tracto" value="{{ tractocamion.ID_TRACTO }}">
+        <input type="submit" value="Agregar Viaje">
+    </form>
+
+    <h2>Agregar Mantenimiento</h2>
+    <form action="/mantenimiento" method="POST">
+        <label for="descripcion">Descripción:</label>
+        <input type="text" id="descripcion" name="descripcion" required><br><br>
+        
+        <label for="fecha">Fecha:</label>
+        <input type="date" id="fecha" name="fecha" required><br><br>
+        
+        <input type="hidden" name="id_tracto" value="{{ tractocamion.ID_TRACTO }}">
+        <input type="submit" value="Agregar Mantenimiento">
+    </form>
+
+    <h2>Agregar Tanqueo</h2>
+    <form action="/tanqueos" method="POST">
+        <label for="cantidad">Cantidad:</label>
+        <input type="number" id="cantidad" name="cantidad" step="0.01" required><br><br>
+        
+        <label for="fecha">Fecha:</label>
+        <input type="date" id="fecha" name="fecha" required><br><br>
+        
+        <input type="hidden" name="id_tracto" value="{{ tractocamion.ID_TRACTO }}">
+        <input type="submit" value="Agregar Tanqueo">
+    </form>
+</body>
+</html>

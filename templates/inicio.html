@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio</title>
+</head>
+<body>
+    <h1>Bienvenido</h1>
+    
+    <h2>Tractocamiones Asociados</h2>
+    <ul>
+        {% for tractocamion in tractocamiones %}
+        <li><a href="{{ url_for('tractocamion_bp.tractocamion_detail', id=tractocamion.ID_TRACTO) }}">{{ tractocamion.MARCA }} - {{ tractocamion.MODELO }} - {{ tractocamion.PLACA }}</a></li>
+        {% endfor %}
+    </ul>
+
+    <h2>Conductores Asociados</h2>
+    <ul>
+        {% for conductor in conductores %}
+        <li>{{ conductor.NOMBRE }} - {{ conductor.CÉDULA }} - {{ conductor.NÚMERO_LICENCIA }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Agregar Tractocamion</h2>
+    <form action="/tractocamiones" method="POST">
+        <label for="marca">Marca:</label>
+        <input type="text" id="marca" name="marca" required><br><br>
+        
+        <label for="modelo">Modelo:</label>
+        <input type="text" id="modelo" name="modelo" required><br><br>
+        
+        <label for="placa">Placa:</label>
+        <input type="text" id="placa" name="placa" required><br><br>
+        
+        <input type="submit" value="Agregar Tractocamion">
+    </form>
+
+    <h2>Agregar Conductor</h2>
+    <form action="/conductores" method="POST">
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="nombre" required><br><br>
+        
+        <label for="cedula">Cédula:</label>
+        <input type="text" id="cedula" name="cedula" required><br><br>
+        
+        <label for="numero_licencia">Número de Licencia:</label>
+        <input type="text" id="numero_licencia" name="numero_licencia" required><br><br>
+        
+        <label for="fecha_expedicion_licencia">Fecha de Expedición de Licencia:</label>
+        <input type="date" id="fecha_expedicion_licencia" name="fecha_expedicion_licencia" required><br><br>
+        
+        <label for="celular">Celular:</label>
+        <input type="text" id="celular" name="celular" required><br><br>
+        
+        <input type="submit" value="Agregar Conductor">
+    </form>
+</body>
+</html>
