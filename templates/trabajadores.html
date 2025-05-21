@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabajadores</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        /* Estilos para el modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Trabajadores</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Cédula</th>
+            <th>Fecha de Pago</th>
+            <th>Sueldo</th>
+            <th>Tipo</th>
+            <th>Fecha Expedición Licencia</th>
+            <th>ID Empresa</th>
+            <th>Acciones</th>
+        </tr>
+        {% for trabajador, tipo_trabajador in trabajadores %}
+        <tr>
+            <td>{{ trabajador.ID_TRABAJADOR }}</td>
+            <td>{{ trabajador.NOMBRE }}</td>
+            <td>{{ trabajador.CEDULA }}</td>
+            <td>{{ trabajador.FECHA_DE_PAGO }}</td>
+            <td>{{ trabajador.SUELDO }}</td>
+            <td>{{ tipo_trabajador.DESCRIPCION }}</td>
+            <td>{{ trabajador.FECHA_EXPEDICION_LICENCIA }}</td>
+            <td>{{ trabajador.ID_EMPRESA }}</td>
+            <td>
+                <button onclick="editTrabajador({{ trabajador.ID_TRABAJADOR }}, '{{ trabajador.NOMBRE }}', '{{ trabajador.CEDULA }}', '{{ trabajador.FECHA_DE_PAGO }}', '{{ trabajador.SUELDO }}', '{{ trabajador.ID_TIPO }}', '{{ trabajador.FECHA_EXPEDICION_LICENCIA }}', '{{ trabajador.ID_EMPRESA }}')">Editar</button>
+                <button onclick="deleteTrabajador({{ trabajador.ID_TRABAJADOR }})">Eliminar</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Modal para editar trabajador -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Editar Trabajador</h2>
+            <form id="editForm">
+                <input type="hidden" id="editId" name="ID_TRABAJADOR">
+                <label for="editNombre">Nombre:</label>
+                <input type="text" id="editNombre" name="NOMBRE" required><br><br>
+                
+                <label for="editCedula">Cédula:</label>
+                <input type="text" id="editCedula" name="CEDULA" required><br><br>
+                
+                <label for="editFechaDePago">Fecha de Pago:</label>
+                <input type="date" id="editFechaDePago" name="FECHA_DE_PAGO" required><br><br>
+                
+                <label for="editSueldo">Sueldo:</label>
+                <input type="number" step="0.01" id="editSueldo" name="SUELDO" required><br><br>
+                
+                <label for="editIdTipo">Tipo:</label>
+                <select id="editIdTipo" name="ID_TIPO" required>
+                    <option value="">Seleccione un tipo</option>
+                    {% for tipo in tipos_trabajador %}
+                    <option value="{{ tipo.ID_TIPO }}">{{ tipo.DESCRIPCION }}</option>
+                    {% endfor %}
+                </select><br><br>
+                
+                <label for="editFechaExpedicionLicencia">Fecha Expedición Licencia:</label>
+                <input type="date" id="editFechaExpedicionLicencia" name="FECHA_EXPEDICION_LICENCIA"><br><br>
+                
+                <input type="hidden" id="editIdEmpresa" name="ID_EMPRESA" value="{{ session['id_empresa'] }}">
+                
+                <input type="submit" value="Guardar Cambios">
+            </form>
+        </div>
+    </div>
+
+    <h2>Agregar Nuevo Trabajador</h2>
+    <form id="trabajadorForm">
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="NOMBRE" required><br><br>
+        
+        <label for="cedula">Cédula:</label>
+        <input type="text" id="cedula" name="CEDULA" required><br><br>
+        
+        <label for="fecha_de_pago">Fecha de Pago:</label>
+        <input type="date" id="fecha_de_pago" name="FECHA_DE_PAGO" required><br><br>
+        
+        <label for="sueldo">Sueldo:</label>
+        <input type="number" step="0.01" id="sueldo" name="SUELDO" required><br><br>
+        
+        <label for="id_tipo">Tipo:</label>
+        <select id="id_tipo" name="ID_TIPO" required>
+            <option value="">Seleccione un tipo</option>
+            {% for tipo in tipos_trabajador %}
+            <option value="{{ tipo.ID_TIPO }}">{{ tipo.DESCRIPCION }}</option>
+            {% endfor %}
+        </select><br><br>
+        
+        <div id="conductorFields" style="display: none;">
+            <label for="fecha_expedicion_licencia">Fecha Expedición Licencia:</label>
+            <input type="date" id="fecha_expedicion_licencia" name="FECHA_EXPEDICION_LICENCIA"><br><br>
+            
+            <label for="id_tracto">ID Tracto:</label>
+            <input type="number" id="id_tracto" name="ID_TRACTO"><br><br>
+        </div>
+        
+        <div id="administrativoFields" style="display: none;">
+            <label for="departamento">Departamento:</label>
+            <input type="text" id="departamento" name="DEPARTAMENTO"><br><br>
+        </div>
+        
+        <input type="hidden" id="id_empresa" name="ID_EMPRESA" value="{{ session['id_empresa'] }}">
+        
+        <input type="submit" value="Agregar Trabajador">
+    </form>
+
+    <h2>Seleccionar Trabajador</h2>
+    <select id="trabajadorSelect">
+        <option value="">Seleccione un trabajador</option>
+        {% for trabajador, tipo_trabajador in trabajadores %}
+        <option value="{{ trabajador.NOMBRE }}">{{ trabajador.NOMBRE }}</option>
+        {% endfor %}
+    </select>
+
+    <h2>Manifiestos</h2>
+    <table border="1" id="manifiestosTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Semana</th>
+                <th>Número</th>
+                <th>Placa</th>
+                <th>Conductor</th>
+                <th>Origen</th>
+                <th>Destino</th>
+                <th>Fecha</th>
+                <th>Mes</th>
+                <th>KOF1</th>
+                <th>Remesa</th>
+                <th>Empresa</th>
+                <th>Valor Flete</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Los manifiestos se cargarán aquí -->
+        </tbody>
+    </table>
+
+    <script>
+        // Función para abrir el modal de edición
+        function editTrabajador(id, nombre, cedula, fechaDePago, sueldo, idTipo, fechaExpedicionLicencia, idEmpresa) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editNombre').value = nombre;
+            document.getElementById('editCedula').value = cedula;
+            document.getElementById('editFechaDePago').value = fechaDePago;
+            document.getElementById('editSueldo').value = sueldo;
+            document.getElementById('editIdTipo').value = idTipo;
+            document.getElementById('editFechaExpedicionLicencia').value = fechaExpedicionLicencia;
+            document.getElementById('editIdEmpresa').value = idEmpresa;
+            document.getElementById('editModal').style.display = "block";
+        }
+
+        // Función para cerrar el modal de edición
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('editModal').style.display = "none";
+        }
+
+        // Función para cerrar el modal de edición cuando se hace clic fuera del modal
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('editModal')) {
+                document.getElementById('editModal').style.display = "none";
+            }
+        }
+
+        // Función para enviar los datos del formulario de edición
+        document.getElementById('editForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            fetch(`/trabajadores/${formData.get('ID_TRABAJADOR')}`, {
+                method: 'PUT',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        // Función para eliminar un trabajador
+        function deleteTrabajador(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar este trabajador?')) {
+                fetch(`/trabajadores/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+        // Función para obtener los manifiestos por trabajador
+        document.getElementById('trabajadorSelect').addEventListener('change', function() {
+            const trabajador = this.value;
+            if (trabajador) {
+                fetch(`/manifiestos/trabajador/${trabajador}`)
+                .then(response => response.json())
+                .then(data => {
+                    const manifiestosTableBody = document.getElementById('manifiestosTable').getElementsByTagName('tbody')[0];
+                    manifiestosTableBody.innerHTML = '';
+                    data.forEach(manifiesto => {
+                        const row = manifiestosTableBody.insertRow();
+                        row.insertCell(0).innerText = manifiesto.id;
+                        row.insertCell(1).innerText = manifiesto.semana;
+                        row.insertCell(2).innerText = manifiesto.numero;
+                        row.insertCell(3).innerText = manifiesto.placa;
+                        row.insertCell(4).innerText = manifiesto.conductor;
+                        row.insertCell(5).innerText = manifiesto.origen;
+                        row.insertCell(6).innerText = manifiesto.destino;
+                        row.insertCell(7).innerText = manifiesto.fecha;
+                        row.insertCell(8).innerText = manifiesto.mes;
+                        row.insertCell(9).innerText = manifiesto.kof1;
+                        row.insertCell(10).innerText = manifiesto.remesa;
+                        row.insertCell(11).innerText = manifiesto.empresa;
+                        row.insertCell(12).innerText = manifiesto.valor_flete;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+
+        // Mostrar campos adicionales según el tipo de trabajador seleccionado
+        document.getElementById('id_tipo').addEventListener('change', function() {
+            const idTipo = this.value;
+            if (idTipo == 1) {
+                document.getElementById('conductorFields').style.display = 'block';
+                document.getElementById('administrativoFields').style.display = 'none';
+            } else if (idTipo == 2) {
+                document.getElementById('conductorFields').style.display = 'none';
+                document.getElementById('administrativoFields').style.display = 'block';
+            } else {
+                document.getElementById('conductorFields').style.display = 'none';
+                document.getElementById('administrativoFields').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

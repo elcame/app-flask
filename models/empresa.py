@@ -1,7 +1,7 @@
 from extensions import db
 
 class Empresa(db.Model):
-    __tablename__ = 'EMPRESA'
+    __tablename__ = 'Empresa'
     ID_EMPRESA = db.Column(db.Integer, primary_key=True)
     NOMBRE = db.Column(db.String(100), nullable=False)
 

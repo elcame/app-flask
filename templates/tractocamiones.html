@@ -3,51 +3,464 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalles del Tractocamion</title>
+    <title>Tractocamiones</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tractocamiones.css') }}">
+    <style>
+       
+    </style>
 </head>
 <body>
-    <h1>Detalles del Tractocamion</h1>
-    <p>Marca: {{ tractocamion.MARCA }}</p>
-    <p>Modelo: {{ tractocamion.MODELO }}</p>
-    <p>Placa: {{ tractocamion.PLACA }}</p>
+    <!-- Botón para plegar/desplegar la barra lateral -->
+    <button class="toggle-sidebar" onclick="toggleSidebar()">☰ Menú</button>
 
-    <h2>Agregar Viaje</h2>
-    <form action="/viajes" method="POST">
-        <label for="destino">Destino:</label>
-        <input type="text" id="destino" name="destino" required><br><br>
-        
-        <label for="fecha_salida">Fecha de Salida:</label>
-        <input type="date" id="fecha_salida" name="fecha_salida" required><br><br>
-        
-        <label for="fecha_llegada">Fecha de Llegada:</label>
-        <input type="date" id="fecha_llegada" name="fecha_llegada" required><br><br>
-        
-        <input type="hidden" name="id_tracto" value="{{ tractocamion.ID_TRACTO }}">
-        <input type="submit" value="Agregar Viaje">
-    </form>
+    <!-- Barra lateral -->
+    <div class="sidebar hidden" id="sidebar">
+        <h2>Menú</h2>
+        <ul>
+            <li><a onclick="showSection('todosTractocamiones')">Todos los Tractocamiones</a></li>
+            <li><a onclick="showSection('agregarTractocamion')">Agregar Tractocamión</a></li>
+            <li><a onclick="showSection('mantenimientos')">Mantenimientos</a></li>
+            <li><a onclick="showSection('repuestos')">Repuestos</a></li>
+            <li><a onclick="showSection('tanqueos')">Tanqueos</a></li>
+            <li><a onclick="showSection('manifiestos')">Manifiestos</a></li> <!-- Nuevo botón -->
+            <li><a onclick="showSection('todos')">Todos los Gastos</a></li>
+        </ul>
+    </div>
 
-    <h2>Agregar Mantenimiento</h2>
-    <form action="/mantenimiento" method="POST">
-        <label for="descripcion">Descripción:</label>
-        <input type="text" id="descripcion" name="descripcion" required><br><br>
-        
-        <label for="fecha">Fecha:</label>
-        <input type="date" id="fecha" name="fecha" required><br><br>
-        
-        <input type="hidden" name="id_tracto" value="{{ tractocamion.ID_TRACTO }}">
-        <input type="submit" value="Agregar Mantenimiento">
-    </form>
+    <!-- Contenido principal -->
+    <div class="content">
+        <h1>Tractocamiones</h1>
 
-    <h2>Agregar Tanqueo</h2>
-    <form action="/tanqueos" method="POST">
-        <label for="cantidad">Cantidad:</label>
-        <input type="number" id="cantidad" name="cantidad" step="0.01" required><br><br>
+        <!-- Sección para seleccionar la placa -->
+        <div id="placaSection">
+            <h2>Seleccionar Placa</h2>
+            <select id="placaSelect">
+                <option value="">Seleccione una placa</option>
+                {% for tractocamion in tractocamiones %}
+                <option value="{{ tractocamion.PLACA }}">{{ tractocamion.PLACA }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="agregarTractocamionSection" class="hidden-section">
+            <h1>Agregar Nuevo Tractocamión</h1>
+            <form id="tractocamionForm" class="form-style">
+                <label for="marca">Marca:</label>
+                <input type="text" id="marca" name="MARCA" required>
+                
+                <label for="modelo">Modelo:</label>
+                <input type="text" id="modelo" name="MODELO" required>
+                
+                <label for="placa">Placa:</label>
+                <input type="text" id="placa" name="PLACA" required>
+                
+                <input type="hidden" id="id_empresa" name="ID_EMPRESA" value="{{ session['id_empresa'] }}">
+                
+                <input type="submit" value="Agregar Tractocamión">
+            </form>
+        </div>
+
+        <!-- Sección de manifiestos -->
+   <!-- Sección de manifiestos -->
+   <table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Semana</th>
+        <th>Número</th>
+        <th>Placa</th>
+        <th>Conductor</th>
+        <th>Origen</th>
+        <th>Destino</th>
+        <th>Fecha</th>
+        <th>Mes</th>
+        <th>KOF1</th>
+        <th>Remesa</th>
+        <th>Empresa</th>
+        <th>Valor Flete</th>
+        <th>Acciones</th>
+    </tr>
+    {% for manifiesto in manifiestos %}
+    <tr>
         
-        <label for="fecha">Fecha:</label>
-        <input type="date" id="fecha" name="fecha" required><br><br>
+        <td>{{ manifiesto.id }}</td>
+        <td>{{ manifiesto.semana }}</td>
+        <td>{{ manifiesto.numero }}</td>
+        <td>{{ manifiesto.placa }}</td>
+        <td>{{ manifiesto.conductor }}</td>
+        <td>{{ manifiesto.origen }}</td>
+        <td>{{ manifiesto.destino }}</td>
+        <td>{{ manifiesto.fecha }}</td>
+        <td>{{ manifiesto.mes }}</td>
+        <td>{{ manifiesto.kof1 }}</td>
+        <td>{{ manifiesto.remesa }}</td>
+        <td>{{ manifiesto.empresa }}</td>
+        <td>{{ manifiesto.valor_flete }}</td>
+        <td>
+            <button onclick="editManifiesto({{ manifiesto.id }})">Editar</button>
+            <button onclick="deleteManifiesto({{ manifiesto.id }})">Eliminar</button>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+          <!-- Sección de todos los tractocamiones -->
+          <div id="todosTractocamionesSection" class="hidden-section">
+            <h2>Todos los Tractocamiones</h2>
+            <table border="1" id="tractocamionesTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Placa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tractocamion in tractocamiones %}
+                    <tr>
+                        <td>{{ tractocamion.ID_TRACTO }}</td>
+                        <td>{{ tractocamion.MARCA }}</td>
+                        <td>{{ tractocamion.MODELO }}</td>
+                        <td>{{ tractocamion.PLACA }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Sección de mantenimientos -->
+        <div id="mantenimientosSection" class="hidden-section">
+            <h2>Mantenimientos</h2>
+            <table border="1" id="mantenimientosTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Valor Total</th>
+                        <th>Taller</th>
+                        <th>Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Los mantenimientos se cargarán aquí dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Sección de repuestos -->
+        <div id="repuestosSection" class="hidden-section">
+            <h2>Repuestos</h2>
+            <table border="1" id="repuestosTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ID Mantenimiento</th>
+                        <th>Nombre</th>
+                        <th>Valor Unitario</th>
+                        <th>Cantidad</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Los repuestos se cargarán aquí dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Sección de tanqueos -->
+        <div id="tanqueosSection" class="hidden-section">
+            <h2>Tanqueos</h2>
+            <table border="1" id="tanqueosTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Galones</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Los tanqueos se cargarán aquí dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+<!-- Sección de pagos -->
+<div id="pagosSection" class="hidden-section">
+    <h2>Pagos</h2>
+    <table class="small-table" id="pagosTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tipo de Pago</th>
+                <th>ID Referencia</th>
+                <th>Monto</th>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th>Placa</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Los pagos se cargarán aquí dinámicamente -->
+        </tbody>
+    </table>
+</div>
+      <!-- Sección de todos los gastos -->
+<div id="todosSection" class="hidden-section">
+    <h2>Todos los Gastos</h2>
+    <p>Incluye mantenimientos, repuestos, tanqueos y pagos.</p>
+
+    <!-- Las tablas se mostrarán dinámicamente -->
+    <div id="gastosContent">
+        <h3>Mantenimientos</h3>
+        <div id="mantenimientosSection"></div>
+
+        <h3>Repuestos</h3>
+        <div id="repuestosSection"></div>
+
+        <h3>Tanqueos</h3>
+        <div id="tanqueosSection"></div>
+
+        <h3>Pagos</h3>
+        <div id="pagosSection"></div>
+    </div>
+</div> 
+
+    </div>
+
+    <script>
+        // Función para plegar/desplegar la barra lateral
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+        }
+
+        // Función para mostrar una sección específica
+        function showSection(section) {
+            const sections = document.querySelectorAll('.hidden-section');
+            sections.forEach(sec => sec.style.display = 'none'); // Ocultar todas las secciones
         
-        <input type="hidden" name="id_tracto" value="{{ tractocamion.ID_TRACTO }}">
-        <input type="submit" value="Agregar Tanqueo">
-    </form>
+            // Mostrar u ocultar "Seleccionar Placa"
+            const placaSection = document.getElementById('placaSection');
+            if (section === 'agregarTractocamion') {
+                placaSection.style.display = 'none';
+            } else {
+                placaSection.style.display = 'block';
+            }
+        
+            if (section === 'todos') {
+                // Mostrar todas las tablas de gastos
+                document.getElementById('mantenimientosSection').style.display = 'block';
+                document.getElementById('repuestosSection').style.display = 'block';
+                document.getElementById('tanqueosSection').style.display = 'block';
+                document.getElementById('pagosTable').parentElement.style.display = 'block'; // Mostrar la tabla de pagos
+               
+            } else {
+                document.getElementById(`${section}Section`).style.display = 'block';
+            }
+        }
+
+        // Función para cargar los datos de pagos en la tabla
+
+
+// Función para obtener los datos de todos los gastos
+function obtenerTodosLosGastos(placa) {
+    fetch(`/tractocamiones/${placa}/detalles`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            // Cargar mantenimientos, repuestos, tanqueos y pagos
+            cargarMantenimientos(data.mantenimientos);
+            cargarRepuestos(data.repuestos);
+            cargarTanqueos(data.tanqueos);
+            cargarPagos(data.pagos);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+function cargarPagos(pagos) {
+    const pagosTableBody = document.getElementById('pagosTable').getElementsByTagName('tbody')[0];
+    pagosTableBody.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos datos
+    pagos.forEach(pago => {
+        const row = pagosTableBody.insertRow();
+        row.insertCell(0).innerText = pago.id_pago;
+        row.insertCell(1).innerText = pago.tipo_pago;
+        row.insertCell(2).innerText = pago.id_referencia;
+        row.insertCell(3).innerText = pago.monto;
+        row.insertCell(4).innerText = pago.fecha_pago;
+        row.insertCell(5).innerText = pago.descripcion || 'N/A';
+        row.insertCell(6).innerText = pago.placa;
+    });
+}
+
+    </script>
+    <script>
+        // Función para obtener los manifiestos por trabajador
+        // Función para cargar los datos de manifiestos en la tabla
+function cargarManifiestos(manifiestos) {
+    const manifiestosTableBody = document.getElementById('manifiestosTable').getElementsByTagName('tbody')[0];
+    manifiestosTableBody.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos datos
+    manifiestos.forEach(manifiesto => {
+        const row = manifiestosTableBody.insertRow();
+        row.insertCell(0).innerText = manifiesto.id;
+        row.insertCell(1).innerText = manifiesto.numero;
+        row.insertCell(2).innerText = manifiesto.placa;
+        row.insertCell(3).innerText = manifiesto.conductor;
+        row.insertCell(4).innerText = manifiesto.origen;
+        row.insertCell(5).innerText = manifiesto.destino;
+        row.insertCell(6).innerText = manifiesto.fecha;
+        row.insertCell(7).innerText = manifiesto.mes;
+        row.insertCell(8).innerText = manifiesto.kof1;
+        row.insertCell(9).innerText = manifiesto.remesa;
+        row.insertCell(10).innerText = manifiesto.empresa;
+        row.insertCell(11).innerText = manifiesto.valor_flete;
+    });
+}
+
+// Función para obtener los manifiestos desde el backend
+function obtenerManifiestos() {
+    fetch('/manifiestos')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            // Cargar los manifiestos en la tabla
+            cargarManifiestos(data);
+        })
+        .catch(error => {
+            console.error('Error al obtener manifiestos:', error);
+        });
+}
+
+// Llamar a la función al cargar la sección de manifiestos
+document.addEventListener('DOMContentLoaded', () => {
+    const manifiestosSection = document.getElementById('manifiestosSection');
+    if (manifiestosSection) {
+        obtenerManifiestos();
+    }
+});
+    
+        // Evento para cargar los manifiestos al seleccionar una placa
+        document.getElementById('placaSelectManifiestos').addEventListener('change', function() {
+            const placa = this.value;
+            if (placa) {
+                fetch(`/manifiestos/${placa}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                            return;
+                        }
+                        pprint('esta llegando a obtenerManifiestos por placa');
+                        // Cargar manifiestos en la tabla
+                        cargarManifiestos(data.manifiestos);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            } else {
+                // Limpiar la tabla si no se selecciona una placa
+                document.getElementById('manifiestosTable').getElementsByTagName('tbody')[0].innerHTML = '';
+            }
+        });
+    
+        // Evento para cargar los manifiestos al seleccionar un trabajador
+        document.getElementById('trabajadorSelect').addEventListener('change', function() {
+            const trabajador = this.value;
+            if (trabajador) {
+                fetch(`/manifiestos/trabajador/${trabajador}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                            return;
+                        }
+                        pprint('esta llegando a obtenerManifiestos por trabajador');
+                        // Cargar manifiestos en la tabla
+                        cargarManifiestos(data.manifiestos);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            } else {
+                // Limpiar la tabla si no se selecciona un trabajador
+                document.getElementById('manifiestosTable').getElementsByTagName('tbody')[0].innerHTML = '';
+            }
+        });
+    </script>
+</body>
+    <script>
+        // Función para obtener los detalles de gastos (mantenimientos, repuestos y tanqueos) por placa
+        document.getElementById('placaSelect').addEventListener('change', function() {
+            const placa = this.value;
+            if (placa) {
+                fetch(`/tractocamiones/${placa}/detalles`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                            return;
+                        }
+
+                        // Cargar mantenimientos en la tabla
+                        const mantenimientosTableBody = document.getElementById('mantenimientosTable').getElementsByTagName('tbody')[0];
+                        mantenimientosTableBody.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos datos
+                        data.mantenimientos.forEach(mantenimiento => {
+                            const row = mantenimientosTableBody.insertRow();
+                            row.insertCell(0).innerText = mantenimiento.id;
+                            row.insertCell(1).innerText = mantenimiento.fecha;
+                            row.insertCell(2).innerText = mantenimiento.valor_total;
+                            row.insertCell(3).innerText = mantenimiento.taller;
+                            row.insertCell(4).innerText = mantenimiento.observaciones;
+                        });
+
+                        // Cargar repuestos en la tabla
+                        const repuestosTableBody = document.getElementById('repuestosTable').getElementsByTagName('tbody')[0];
+                        repuestosTableBody.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos datos
+                        data.repuestos.forEach(repuesto => {
+                            const row = repuestosTableBody.insertRow();
+                            row.insertCell(0).innerText = repuesto.id;
+                            row.insertCell(1).innerText = repuesto.id_mantenimiento;
+                            row.insertCell(2).innerText = repuesto.nombre;
+                            row.insertCell(3).innerText = repuesto.valor;
+                            row.insertCell(4).innerText = repuesto.cantidad;
+                            row.insertCell(5).innerText = repuesto.total;
+                        });
+
+                        // Cargar tanqueos en la tabla
+                        const tanqueosTableBody = document.getElementById('tanqueosTable').getElementsByTagName('tbody')[0];
+                        tanqueosTableBody.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos datos
+                        data.tanqueos.forEach(tanqueo => {
+                            const row = tanqueosTableBody.insertRow();
+                            row.insertCell(0).innerText = tanqueo.id;
+                            row.insertCell(1).innerText = tanqueo.fecha;
+                            row.insertCell(2).innerText = tanqueo.galones;
+                            row.insertCell(3).innerText = tanqueo.valor;
+                        });
+                        // Cargar pagos en la tabla
+                        cargarPagos(data.pagos);
+                    })
+
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            } else {
+                // Limpiar las tablas si no se selecciona una placa
+                document.getElementById('mantenimientosTable').getElementsByTagName('tbody')[0].innerHTML = '';
+                document.getElementById('repuestosTable').getElementsByTagName('tbody')[0].innerHTML = '';
+                document.getElementById('tanqueosTable').getElementsByTagName('tbody')[0].innerHTML = '';
+            }
+        });
+
+        
+    </script>
+   
+
 </body>
 </html>

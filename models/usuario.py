@@ -1,13 +1,20 @@
 from extensions import db
 
 class Usuario(db.Model):
-    __tablename__ = 'USUARIOS'
+    __tablename__ = 'Usuario'
     ID_USUARIO = db.Column(db.Integer, primary_key=True)
-    NOMBRE = db.Column(db.String(100), nullable=False)
+    NOMBRE = db.Column(db.String(50), nullable=False)
     EMAIL = db.Column(db.String(100), unique=True, nullable=False)
-    CONTRASEÑA = db.Column(db.String(255), nullable=False)
-    TIPO_USUARIO = db.Column(db.Enum('ADMINISTRADOR', 'EMPRESA', 'CONDUCTOR'), nullable=False)
-    ID_EMPRESA = db.Column(db.Integer, db.ForeignKey('EMPRESA.ID_EMPRESA'))
+    CONTRASEÑA = db.Column(db.String(100), nullable=False)
+    TIPO_USUARIO = db.Column(db.String(50), nullable=False)
+    ID_EMPRESA = db.Column(db.Integer, db.ForeignKey('Empresa.ID_EMPRESA'), nullable=True)
 
     def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        return {
+            'ID_USUARIO': self.ID_USUARIO,
+            'NOMBRE': self.NOMBRE,
+            'EMAIL': self.EMAIL,
+            'CONTRASEÑA': self.CONTRASEÑA,
+            'TIPO_USUARIO': self.TIPO_USUARIO,
+            'ID_EMPRESA': self.ID_EMPRESA
+        }

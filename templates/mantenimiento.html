@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mantenimiento</title>
+</head>
+<body>
+    <h1>Mantenimientos</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Placa</th>
+                <th>Fecha</th>
+                <th>Valor Total</th>
+                <th>Taller</th>
+                <th>KM Actual</th>
+                <th>Próximo KM</th>
+                <th>Observaciones</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mantenimiento in mantenimientos %}
+            <tr>
+                <td>{{ mantenimiento.id }}</td>
+                <td>{{ mantenimiento.placa }}</td>
+                <td>{{ mantenimiento.fecha }}</td>
+                <td>{{ mantenimiento.valor_total }}</td>
+                <td>{{ mantenimiento.taller }}</td>
+                <td>{{ mantenimiento.km_actual }}</td>
+                <td>{{ mantenimiento.proximo_km }}</td>
+                <td>{{ mantenimiento.observaciones }}</td>
+                <td>
+                    <button onclick="mostrarRepuestos({{ mantenimiento.id }})">Ver Repuestos</button>
+                    <button onclick="eliminarMantenimiento({{ mantenimiento.id }})">Eliminar</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h1>Repuestos Asociados</h1>
+<table border="1" id="repuestosTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>ID Mantenimiento</th>
+            <th>Repuesto</th>
+            <th>Valor</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Los repuestos se cargarán aquí dinámicamente -->
+    </tbody>
+</table>
+<h2>Suma Total de Repuestos: <span id="sumaTotalRepuestos">0</span></h2>
+<h2>Suma Total (Mantenimiento + Repuestos): <span id="sumaTotalGeneral">0</span></h2>
+
+    <script>
+        // Función para mostrar los repuestos asociados a un mantenimiento
+        function mostrarRepuestos(idMantenimiento) {
+            fetch(`/mantenimiento/${idMantenimiento}/repuestos`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+        
+                    const repuestosTableBody = document.getElementById('repuestosTable').getElementsByTagName('tbody')[0];
+                    repuestosTableBody.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos datos
+        
+                    data.repuestos.forEach(repuesto => {
+                        const row = repuestosTableBody.insertRow();
+                        row.insertCell(0).innerText = repuesto.id;
+                        row.insertCell(1).innerText = repuesto.id_mantenimiento;
+                        row.insertCell(2).innerText = repuesto.repuesto;
+                        row.insertCell(3).innerText = repuesto.valor;
+                    });
+        
+                    // Actualizar la suma total de los valores de los repuestos
+                    document.getElementById('sumaTotalRepuestos').innerText = data.suma_repuestos.toFixed(2);
+        
+                    // Actualizar la suma total (repuestos + mantenimiento)
+                    document.getElementById('sumaTotalGeneral').innerText = data.suma_total.toFixed(2);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Función para eliminar un mantenimiento y sus repuestos asociados
+        function eliminarMantenimiento(idMantenimiento) {
+            if (confirm(`¿Estás seguro de que deseas eliminar el mantenimiento con ID ${idMantenimiento} y sus repuestos asociados?`)) {
+                fetch(`/mantenimiento/${idMantenimiento}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        location.reload(); // Recargar la página para actualizar la tabla
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
+    </script>
+</body>
+</html>

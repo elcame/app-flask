@@ -1,0 +1,554 @@
+/* General */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f9;
+    color: #333;
+    padding-top: 56px;
+    min-height: 100vh;
+}
+
+h1, h2, h3 {
+    color: #0056b3;
+    text-align: center;
+    margin: 20px 0;
+}
+
+/* Barra lateral */
+.sidebar {
+    position: fixed;
+    top: 56px;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 48px 0 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+    background-color: #fff;
+    transition: all 0.3s ease;
+}
+
+.sidebar.hidden {
+    transform: translateX(-100%);
+}
+
+.sidebar h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #fff;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar ul li {
+    margin: 10px 0;
+}
+
+.sidebar ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    display: block;
+    padding: 10px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.sidebar ul li a:hover {
+    background-color: #003d80;
+}
+
+/* Botón para plegar/desplegar la barra lateral */
+.toggle-sidebar {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background-color: #0056b3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 15px;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-sidebar:hover {
+    background-color: #003d80;
+}
+
+/* Contenedor principal */
+.main-container {
+    margin-left: 270px;
+    padding: 20px;
+    transition: margin-left 0.3s ease-in-out;
+}
+
+.sidebar.hidden + .main-container {
+    margin-left: 20px;
+}
+
+/* Secciones */
+.section {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    display: none;
+    animation: fadeIn 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.section.active {
+    display: block;
+}
+
+/* Estilos para la sección de subir carpetas */
+#uploadForm {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px dashed #0056b3;
+    margin: 20px 0;
+    text-align: center;
+}
+
+#uploadForm input[type="file"] {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+}
+
+#uploadForm input[type="submit"] {
+    background-color: #0056b3;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+}
+
+#uploadForm input[type="submit"]:hover {
+    background-color: #003d80;
+}
+
+/* Estilos para la lista de carpetas */
+#carpetasList {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+#carpetasList li {
+    background-color: #f8f9fa;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 4px;
+    border-left: 4px solid #0056b3;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Estilos para el selector de carpetas */
+#carpetaSelect {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 16px;
+}
+
+/* Estilos para los botones de acción */
+#listarCarpetasButton, #procesarCarpetaButton {
+    background-color: #0056b3;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+    margin: 10px 0;
+    display: inline-block;
+}
+
+#listarCarpetasButton:hover, #procesarCarpetaButton:hover {
+    background-color: #003d80;
+}
+
+/* Tablas */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+table th, table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+table th {
+    background-color: #0056b3;
+    color: white;
+    font-weight: bold;
+}
+
+table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+table tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Botones de acción en tablas */
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 14px;
+    margin: 0 2px;
+}
+
+.btn-primary {
+    background-color: #0056b3;
+    color: white;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1055;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    outline: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-dialog {
+    position: relative;
+    width: auto;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 3.5rem);
+}
+
+.modal.fade .modal-dialog {
+    transition: transform .3s ease-out;
+    transform: translate(0, -50px);
+}
+
+.modal.show .modal-dialog {
+    transform: none;
+}
+
+.modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 0.3rem;
+    outline: 0;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    border-top-left-radius: calc(0.3rem - 1px);
+    border-top-right-radius: calc(0.3rem - 1px);
+}
+
+.modal-body {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 1rem;
+}
+
+.modal-footer {
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.75rem;
+    border-top: 1px solid #dee2e6;
+    border-bottom-right-radius: calc(0.3rem - 1px);
+    border-bottom-left-radius: calc(0.3rem - 1px);
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000;
+}
+
+.modal-backdrop.fade {
+    opacity: 0;
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+@media (min-width: 576px) {
+    .modal-dialog {
+        max-width: 80%;
+        margin: 1.75rem auto;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .modal-dialog {
+        max-width: 95%;
+        margin: 1rem auto;
+    }
+}
+
+/* Inputs */
+input[type="text"], input[type="date"], input[type="number"], select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #0056b3;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #003d80;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+    
+    .main-container {
+        margin-left: 220px;
+    }
+    
+    .sidebar.hidden + .main-container {
+        margin-left: 20px;
+    }
+    
+    #uploadForm {
+        padding: 15px;
+    }
+    
+    .btn-sm {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+}
+
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.modal .btn {
+    position: relative;
+    z-index: 1051;
+}
+
+/* Estilos de navegación */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.nav-link {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    position: relative;
+    z-index: 1000;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    font-weight: 500;
+}
+
+/* Estilos del contenido principal */
+main {
+    margin-left: 240px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+/* Estilos de las secciones */
+.section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.section.active {
+    display: block;
+}
+
+/* Estilos de las tarjetas */
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+}
+
+.card-title {
+    color: #333;
+    font-weight: 500;
+}
+
+/* Estilos de las tablas */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    font-weight: 500;
+    background-color: #f8f9fa;
+}
+
+/* Estilos de los botones */
+.btn {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    position: relative;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    main {
+        margin-left: 0;
+    }
+    
+    .sidebar {
+        position: static;
+        height: auto;
+        padding-top: 0;
+    }
+}
+
+/* Asegurar que los elementos interactivos estén por encima del modal cuando no está activo */
+.btn, .nav-link, .form-control, select {
+    position: relative;
+    z-index: 1;
+}
+
+/* Cuando el modal está activo */
+.modal.show {
+    z-index: 1050 !important;
+}
+
+.modal.show ~ * {
+    z-index: 1;
+}
+
+/* Estilos para el contenedor del modal */
+#modalContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1050;
+}
+
+#modalContainer .modal {
+    pointer-events: auto;
+}
+
+/* Asegurar que los botones sean clickeables */
+.btn {
+    position: relative;
+    z-index: 1;
+}
+
+/* Estilos para las secciones */
+.section {
+    position: relative;
+    z-index: 1;
+}

@@ -4,56 +4,490 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/inicio.css') }}">
+
 </head>
 <body>
-    <h1>Bienvenido</h1>
+    <button onclick="window.location.href='{{ url_for('usuario_bp.tractocamiones') }}'">Ver Tractocamiones</button>
+    <button onclick="window.location.href='{{ url_for('usuario_bp.trabajadores') }}'">Ver Trabajadores</button>
+    <button onclick="window.location.href='{{ url_for('usuario_bp.manifiestos') }}'">Ver Manifiestos</button>
+    <button onclick="window.location.href='{{ url_for('tanqueo_bp.ver_tanqueos') }}'">Ver Tanqueos</button>
+    <button onclick="window.location.href='{{ url_for('mantenimiento_bp.ver_mantenimientos') }}'">Ver Mantenimiento</button>
+
+    <h2>Seleccionar por Tipo de Pago</h2>
+<select id="tipoPagoSelect">
+    <option value="">Seleccione un tipo</option>
+    <option value="manifiesto">Manifiesto</option>
+    <option value="mantenimiento">Mantenimiento</option>
+    <option value="seguro">Seguro</option>
+    <option value="sueldo">Sueldo</option>
+    <option value="tanqueo">Tanqueo</option>
+    <option value="repuestos">repuestos</option>
     
-    <h2>Tractocamiones Asociados</h2>
-    <ul>
+</select>
+
+    <h1>Pagos</h1>
+    <table border="1" id="pagosTable">
+        <thead>
+            <tr>
+                <th>ID Pago</th>
+                <th>placa </th>
+                <th>Tipo de Pago</th>
+                <th>ID Referencia</th>
+                <th>Monto</th>
+                <th>Fecha de Pago</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Los pagos se cargarán aquí -->
+        </tbody>
+    </table>
+    <h2>Agregar Pago</h2>
+    <form id="addPagoForm">
+        <label for="tipoPago">Tipo de Pago:</label>
+        <select id="tipoPago" name="tipo_pago" required>
+            <option value="">Seleccione un tipo</option>
+            <option value="manifiesto">Manifiesto</option>
+            <option value="mantenimiento">Mantenimiento</option>
+            <option value="seguro">Seguro</option>
+            <option value="sueldo">Sueldo</option>
+            <option value="tanqueo">tanqueo</option>
+        </select><br><br>
+       
+        <label for="idReferencia">ID Referencia:</label>
+        <input type="number" id="idReferencia" name="id_referencia" required><br><br>
+    
+        <label for="monto">Monto:</label>
+        <input type="number" step="0.01" id="monto" name="monto" required><br><br>
+    
+        <label for="fechaPago">Fecha de Pago:</label>
+        <input type="date" id="fechaPago" name="fecha_pago" required><br><br>
+    
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion"></textarea><br><br>
+    
+        <button type="submit">Agregar Pago</button>
+    </form>
+ 
+    <h1>Tractocamiones</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Placa</th>
+            <th>ID Empresa</th>
+        </tr>
         {% for tractocamion in tractocamiones %}
-        <li><a href="{{ url_for('tractocamion_bp.tractocamion_detail', id=tractocamion.ID_TRACTO) }}">{{ tractocamion.MARCA }} - {{ tractocamion.MODELO }} - {{ tractocamion.PLACA }}</a></li>
+        <tr>
+            <td>{{ tractocamion.ID_TRACTO }}</td>
+            <td>{{ tractocamion.MARCA }}</td>
+            <td>{{ tractocamion.MODELO }}</td>
+            <td>{{ tractocamion.PLACA }}</td>
+            <td>{{ tractocamion.ID_EMPRESA }}</td>
+            <td>
+                <button onclick="deleteTractocamion({{ tractocamion.ID_TRACTO }})">Eliminar</button>
+            </td>
+        </tr>
         {% endfor %}
-    </ul>
+    </table>
 
-    <h2>Conductores Asociados</h2>
-    <ul>
-        {% for conductor in conductores %}
-        <li>{{ conductor.NOMBRE }} - {{ conductor.CÉDULA }} - {{ conductor.NÚMERO_LICENCIA }}</li>
-        {% endfor %}
-    </ul>
-
-    <h2>Agregar Tractocamion</h2>
-    <form action="/tractocamiones" method="POST">
+    <h2>Agregar Nuevo Tractocamion</h2>
+    <form id="tractocamionForm">
         <label for="marca">Marca:</label>
-        <input type="text" id="marca" name="marca" required><br><br>
+        <input type="text" id="marca" name="MARCA" required><br><br>
         
         <label for="modelo">Modelo:</label>
-        <input type="text" id="modelo" name="modelo" required><br><br>
+        <input type="text" id="modelo" name="MODELO" required><br><br>
         
         <label for="placa">Placa:</label>
-        <input type="text" id="placa" name="placa" required><br><br>
+        <input type="text" id="placa" name="PLACA" required><br><br>
+        
+        <input type="hidden" id="id_empresa" name="ID_EMPRESA" value="{{ session['id_empresa'] }}">
         
         <input type="submit" value="Agregar Tractocamion">
     </form>
 
-    <h2>Agregar Conductor</h2>
-    <form action="/conductores" method="POST">
+    <h1>Trabajadores</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Cédula</th>
+            <th>Fecha de Pago</th>
+            <th>Sueldo</th>
+            <th>Tipo</th>
+            <th>Fecha Expedición Licencia</th>
+            <th>ID Empresa</th>
+            <th>Acciones</th>
+        </tr>
+        {% for trabajador, tipo_trabajador in trabajadores %}
+        <tr>
+            <td>{{ trabajador.ID_TRABAJADOR }}</td>
+            <td>{{ trabajador.NOMBRE }}</td>
+            <td>{{ trabajador.CEDULA }}</td>
+            <td>{{ trabajador.FECHA_DE_PAGO }}</td>
+            <td>{{ trabajador.SUELDO }}</td>
+            <td>{{ tipo_trabajador.DESCRIPCION }}</td>
+            <td>{{ trabajador.FECHA_EXPEDICION_LICENCIA }}</td>
+            <td>{{ trabajador.ID_EMPRESA }}</td>
+            <td>
+                <button onclick="deleteTrabajador({{ trabajador.ID_TRABAJADOR }})">Eliminar</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>Agregar Nuevo Trabajador</h2>
+    <form id="trabajadorForm">
         <label for="nombre">Nombre:</label>
-        <input type="text" id="nombre" name="nombre" required><br><br>
+        <input type="text" id="nombre" name="NOMBRE" required><br><br>
         
         <label for="cedula">Cédula:</label>
-        <input type="text" id="cedula" name="cedula" required><br><br>
+        <input type="text" id="cedula" name="CEDULA" required><br><br>
         
-        <label for="numero_licencia">Número de Licencia:</label>
-        <input type="text" id="numero_licencia" name="numero_licencia" required><br><br>
+        <label for="fecha_de_pago">Fecha de Pago:</label>
+        <input type="date" id="fecha_de_pago" name="FECHA_DE_PAGO" required><br><br>
         
-        <label for="fecha_expedicion_licencia">Fecha de Expedición de Licencia:</label>
-        <input type="date" id="fecha_expedicion_licencia" name="fecha_expedicion_licencia" required><br><br>
+        <label for="sueldo">Sueldo:</label>
+        <input type="number" step="0.01" id="sueldo" name="SUELDO" required><br><br>
         
-        <label for="celular">Celular:</label>
-        <input type="text" id="celular" name="celular" required><br><br>
+        <label for="id_tipo">Tipo:</label>
+        <select id="id_tipo" name="ID_TIPO" required>
+            <option value="">Seleccione un tipo</option>
+            {% for tipo in tipos_trabajador %}
+            <option value="{{ tipo.ID_TIPO }}">{{ tipo.DESCRIPCION }}</option>
+            {% endfor %}
+        </select><br><br>
         
-        <input type="submit" value="Agregar Conductor">
+        <div id="conductorFields" style="display: none;">
+            <label for="fecha_expedicion_licencia">Fecha Expedición Licencia:</label>
+            <input type="date" id="fecha_expedicion_licencia" name="FECHA_EXPEDICION_LICENCIA"><br><br>
+            
+            <label for="id_tracto">ID Tracto:</label>
+            <input type="number" id="id_tracto" name="ID_TRACTO"><br><br>
+        </div>
+        
+        <div id="administrativoFields" style="display: none;">
+            <label for="departamento">Departamento:</label>
+            <input type="text" id="departamento" name="DEPARTAMENTO"><br><br>
+        </div>
+        
+        <input type="submit" value="Agregar Trabajador">
     </form>
+    <h2>Eliminar Todos los Manifiestos</h2>
+    <button id="deleteAllManifiestosButton">Eliminar Todos</button>
+    <script>
+        document.getElementById('deleteAllManifiestosButton').addEventListener('click', function() {
+            if (confirm('¿Estás seguro de que deseas eliminar todos los manifiestos?')) {
+                fetch('{{ url_for("manifiesto_bp.eliminar_todos_manifiestos") }}', {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+    </script>    
+    <h1>Manifiestos</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Número</th>
+            <th>Placa</th>
+            <th>Conductor</th>
+            <th>Origen</th>
+            <th>Destino</th>
+            <th>Fecha</th>
+            <th>Mes</th>
+            <th>KOF1</th>
+            <th>Remesa</th>
+            <th>Empresa</th>
+            <th>Valor Flete</th>
+            <th>Acciones</th>
+        </tr>
+        {% for manifiesto in manifiestos %}
+        <tr>
+            <td>{{ manifiesto.id }}</td>
+            <td>{{ manifiesto.numero }}</td>
+            <td>{{ manifiesto.placa }}</td>
+            <td>{{ manifiesto.conductor }}</td>
+            <td>{{ manifiesto.origen }}</td>
+            <td>{{ manifiesto.destino }}</td>
+            <td>{{ manifiesto.fecha }}</td>
+            <td>{{ manifiesto.mes }}</td>
+            <td>{{ manifiesto.kof1 }}</td>
+            <td>{{ manifiesto.remesa }}</td>
+            <td>{{ manifiesto.empresa }}</td>
+            <td>{{ manifiesto.valor_flete }}</td>
+            <td>
+                <button onclick="editManifiesto({{ manifiesto.id }})">Editar</button>
+                <button onclick="deleteManifiesto({{ manifiesto.id }})">Eliminar</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h2>Editar Manifiesto</h2>
+    <form id="editManifiestoForm" style="display: none;">
+        <input type="hidden" id="editId" name="id">
+        <label for="editPlaca">Placa:</label>
+        <input type="text" id="editPlaca" name="placa" required><br><br>
+        
+        <label for="editConductor">Conductor:</label>
+        <input type="text" id="editConductor" name="conductor" required><br><br>
+        
+        <label for="editOrigen">Origen:</label>
+        <input type="text" id="editOrigen" name="origen" required><br><br>
+        
+        <label for="editDestino">Destino:</label>
+        <input type="text" id="editDestino" name="destino" required><br><br>
+        
+        <label for="editFecha">Fecha:</label>
+        <input type="date" id="editFecha" name="fecha" required><br><br>
+        
+        <label for="editMes">Mes:</label>
+        <input type="text" id="editMes" name="mes" required><br><br>
+        
+        <label for="editKof1">KOF1:</label>
+        <input type="text" id="editKof1" name="kof1" required><br><br>
+        
+        <label for="editRemesa">Remesa:</label>
+        <input type="text" id="editRemesa" name="remesa" required><br><br>
+        
+        <label for="editEmpresa">Empresa:</label>
+        <input type="text" id="editEmpresa" name="empresa" required><br><br>
+        
+        <label for="editValorFlete">Valor Flete:</label>
+        <input type="number" id="editValorFlete" name="valor_flete" required><br><br>
+        
+        <button type="submit">Guardar Cambios</button>
+        <button type="button" onclick="cancelEdit()">Cancelar</button>
+    </form>
+   
+    <script>
+      
+        function deleteTractocamion(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar este tractocamion?')) {
+                fetch(`/tractocamiones/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
+        document.getElementById('tractocamionForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            fetch('{{ url_for("tractocamion_bp.add_tractocamion") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        document.getElementById('trabajadorForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            // Validar que FECHA_EXPEDICION_LICENCIA sea NULL si ID_TIPO es 2
+            if (data['ID_TIPO'] == 2) {
+                data['FECHA_EXPEDICION_LICENCIA'] = null;
+            }
+
+            fetch('{{ url_for("trabajadores_bp.add_trabajador") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        
+        
+     
+        function deleteTrabajador(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar este trabajador?')) {
+                fetch(`/trabajadores/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+      
+       
+
+        document.getElementById('id_tipo').addEventListener('change', function() {
+            const idTipo = this.value;
+            if (idTipo == 1) {
+                document.getElementById('conductorFields').style.display = 'block';
+                document.getElementById('administrativoFields').style.display = 'none';
+            } else if (idTipo == 2) {
+                document.getElementById('conductorFields').style.display = 'none';
+                document.getElementById('administrativoFields').style.display = 'block';
+            } else {
+                document.getElementById('conductorFields').style.display = 'none';
+                document.getElementById('administrativoFields').style.display = 'none';
+            }
+        });
+    </script>
+    
+    
+    <script>
+        document.getElementById('addPagoForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+    
+            // Obtener los datos del formulario
+            const formData = new FormData(event.target);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+    
+            // Enviar los datos al servidor
+            fetch('/pagos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+    
+    <script>
+        document.getElementById('tipoPagoSelect').addEventListener('change', function() {
+            const tipoPago = this.value;
+            if (tipoPago) {
+                fetch(`/pagos/tipo/${tipoPago}`)
+                .then(response => response.json())
+                .then(data => {
+                    const pagosTableBody = document.getElementById('pagosTable').getElementsByTagName('tbody')[0];
+                    pagosTableBody.innerHTML = '';
+                    data.forEach(pago => {
+                        const row = pagosTableBody.insertRow();
+                        row.insertCell(0).innerText = pago.id_pago;
+                        row.insertCell(1).innerText = pago.placa;
+                        row.insertCell(2).innerText = pago.tipo_pago;
+                        row.insertCell(3).innerText = pago.id_referencia;
+                        row.insertCell(4).innerText = pago.monto;
+                        row.insertCell(5).innerText = pago.fecha_pago;
+                        row.insertCell(6).innerText = pago.descripcion;
+                        
+        
+                        // Botón para eliminar el pago
+                        const deleteCell = row.insertCell(6);
+                        const deleteButton = document.createElement('button');
+                        deleteButton.innerText = 'Eliminar';
+                        deleteButton.onclick = function() {
+                            if (confirm(`¿Estás seguro de que deseas eliminar el pago con ID ${pago.id_pago}?`)) {
+                                fetch(`/pagos/${pago.id_pago}`, {
+                                    method: 'DELETE'
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.message) {
+                                        alert(data.message);
+                                        row.remove(); // Eliminar la fila de la tabla
+                                    } else {
+                                        alert('Error: ' + data.error);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                });
+                            }
+                        };
+                        deleteCell.appendChild(deleteButton);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+
+    </script>
+
 </body>
 </html>

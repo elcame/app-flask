@@ -1,0 +1,60 @@
+<div class="container mt-4">
+    <h2>Procesar PDFs</h2>
+    
+    <!-- Formulario de subida -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="folder" class="form-label">Seleccionar Carpeta</label>
+                    <input type="file" class="form-control" id="folder" name="folder" webkitdirectory directory multiple>
+                </div>
+                <button type="submit" class="btn btn-primary">Subir Carpeta</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de carpetas -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Carpetas Subidas</h5>
+            <button class="btn btn-sm btn-outline-primary" onclick="actualizarListaCarpetas()">
+                <i class="fas fa-sync-alt"></i> Actualizar Lista
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>PDFs</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="carpetasList">
+                        <!-- Las carpetas se cargarán aquí -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de datos procesados -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Datos Procesados</h5>
+        </div>
+        <div class="card-body">
+            <div id="tablaDatosProcesados">
+                <!-- La tabla de datos procesados se cargará aquí -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de progreso -->
+    <div id="processProgress" class="progress mb-4 d-none">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+    </div>
+</div> 

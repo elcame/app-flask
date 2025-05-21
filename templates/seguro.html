@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguros</title>
+</head>
+<body>
+    <h1>Seguros</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Placa</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Valor</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for seguro in seguros %}
+            <tr>
+                <td>{{ seguro.id }}</td>
+                <td>{{ seguro.placa }}</td>
+                <td>{{ seguro.fecha_inicio }}</td>
+                <td>{{ seguro.fecha_fin }}</td>
+                <td>{{ seguro.valor }}</td>
+                <td>{{ seguro.descripcion }}</td>
+                <td>
+                    <button onclick="editarSeguro({{ seguro.id }}, '{{ seguro.placa }}', '{{ seguro.fecha_inicio }}', '{{ seguro.fecha_fin }}', {{ seguro.valor }}, '{{ seguro.descripcion }}')">Editar</button>
+                    <button onclick="eliminarSeguro({{ seguro.id }})">Eliminar</button>
+                    <button onclick="pagarSeguro({{ seguro.id }})">Pagar</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <h2>Agregar Seguro</h2>
+    <form id="seguroForm">
+        <label for="placa">Placa:</label>
+        <input type="text" id="placa" name="placa" required><br><br>
+
+        <label for="fecha_inicio">Fecha Inicio:</label>
+        <input type="date" id="fecha_inicio" name="fecha_inicio" required><br><br>
+
+        <label for="fecha_fin">Fecha Fin:</label>
+        <input type="date" id="fecha_fin" name="fecha_fin" required><br><br>
+
+        <label for="valor">Valor:</label>
+        <input type="number" step="0.01" id="valor" name="valor" required><br><br>
+
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion"></textarea><br><br>
+
+        <button type="submit">Agregar Seguro</button>
+    </form>
+
+    <script>
+        // Función para agregar un seguro
+        document.getElementById('seguroForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch('/seguros', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Seguro agregado correctamente');
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al agregar el seguro');
+            });
+        });
+
+        // Función para eliminar un seguro
+        function eliminarSeguro(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar este seguro?')) {
+                fetch(`/seguros/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message || 'Seguro eliminado correctamente');
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al eliminar el seguro');
+                });
+            }
+        }
+
+        // Función para editar un seguro
+        function editarSeguro(id, placa, fecha_inicio, fecha_fin, valor, descripcion) {
+            document.getElementById('placa').value = placa;
+            document.getElementById('fecha_inicio').value = fecha_inicio;
+            document.getElementById('fecha_fin').value = fecha_fin;
+            document.getElementById('valor').value = valor;
+            document.getElementById('descripcion').value = descripcion;
+
+            document.getElementById('seguroForm').onsubmit = function(event) {
+                event.preventDefault();
+
+                const formData = new FormData(this);
+                const data = Object.fromEntries(formData.entries());
+
+                fetch(`/seguros/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message || 'Seguro actualizado correctamente');
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al actualizar el seguro');
+                });
+            };
+        }
+    </script>
+    <script>
+        function pagarSeguro(id) {
+            if (confirm('¿Estás seguro de que deseas pagar este seguro?')) {
+                fetch(`/seguros/${id}/pagar`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message || 'Seguro pagado correctamente');
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al pagar el seguro');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

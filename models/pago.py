@@ -1,18 +1,12 @@
 from extensions import db
 
 class Pago(db.Model):
-    __tablename__ = 'PAGO'
+    __tablename__ = 'pagos'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id_pago = db.Column(db.Integer, primary_key=True)
+    tipo_pago = db.Column(db.String(50), nullable=False)  # manifiesto, mantenimiento, seguro, sueldo
+    id_referencia = db.Column(db.Integer, nullable=False)  # ID del manifiesto, mantenimiento, etc.
     monto = db.Column(db.Float, nullable=False)
-    fecha = db.Column(db.Date, nullable=False)
-    metodo_pago = db.Column(db.String(50), nullable=False)
-    descripcion = db.Column(db.String(200))
-
-    def __init__(self, monto, metodo_pago, descripcion=None):
-        self.monto = monto
-        self.metodo_pago = metodo_pago
-        self.descripcion = descripcion
-
-    def __repr__(self):
-        return f'<Pago {self.id}>'
+    fecha_pago = db.Column(db.Date, nullable=False)
+    descripcion = db.Column(db.Text, nullable=True)
+    placa = db.Column(db.String(50), nullable=False)
