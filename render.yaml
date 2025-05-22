@@ -5,7 +5,7 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       chmod +x start.sh
-    startCommand: ./start.sh
+    startCommand: bash start.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
@@ -13,6 +13,8 @@ services:
         value: 2d288172ecd5b61ac97539ebbb927bee06d9584fc7a3e813c727429811246e56
       - key: RENDER
         value: "true"
+      - key: PORT
+        value: "10000"
 
 databases:
   - name: acr-db
