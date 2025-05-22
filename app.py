@@ -12,7 +12,16 @@ def create_app():
     app = Flask(__name__)
 
     # Configuración básica
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
+    if os.environ.get('RENDER'):
+        # Configuración para Render
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgresql://', 'postgresql://')
+    elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
+        # Configuración para PythonAnywhere
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
+    else:
+        # Configuración local
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:came@DESKTOP-JQSP6UN\\MYSQL/EMPRESAACR?driver=ODBC+Driver+17+for+SQL+Server'
+    
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.secret_key = os.getenv('SECRET_KEY')
     app.config['UPLOAD_FOLDER'] = 'uploads'

@@ -1,7 +1,7 @@
 import os
 import re
 import pandas as pd
-import fitz  # PyMuPDF
+import pdfplumber  # Reemplazamos PyMuPDF por pdfplumber
 import requests
 import json
 import openpyxl  # Para manejo de archivos Excel
@@ -231,11 +231,10 @@ def incrementar_contador(placa):
 def pdf_to_text(ruta_pdf):
     if not os.path.exists(ruta_pdf):
         raise FileNotFoundError(f"No such file: '{ruta_pdf}'")
-    doc = fitz.open(ruta_pdf)
     text = ""
-    for page_num in range(len(doc)):
-        page = doc.load_page(page_num)
-        text += page.get_text()
+    with pdfplumber.open(ruta_pdf) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() or ""
     return text
 from datetime import datetime, timedelta
 
