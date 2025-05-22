@@ -10,25 +10,26 @@ load_dotenv()
 
 def create_app():
     app = Flask(__name__)
+
     # Configuración básica
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.secret_key = os.getenv('SECRET_KEY')
     app.config['UPLOAD_FOLDER'] = 'uploads'
-    
+
     # Asegurarse de que el directorio de uploads existe
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    
+
     # Configuración de Flask-Login
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'usuario_bp.login_form'
     login_manager.login_message = 'Por favor inicie sesión para acceder a esta página.'
     login_manager.login_message_category = 'info'
-    
+
     # Inicialización de extensiones
     db.init_app(app)
-    
+
     # Registro de blueprints
     with app.app_context():
         # Importar modelos
@@ -38,7 +39,7 @@ def create_app():
         from models.tipo_trabajador import TipoTrabajador
         from models.trabajadores import Trabajadores
         from models.manifiesto import Manifiesto
-        
+
         # Importar blueprints
         from routes.usuario_routes import usuario_bp
         from routes.empresa_routes import empresa_bp
@@ -50,7 +51,7 @@ def create_app():
         from routes.tanqueo_routes import tanqueo_bp
         from routes.mantenimiento_routes import mantenimiento_bp
         from routes.seguro_routes import seguro_bp
-        
+
         # Registrar blueprints
         app.register_blueprint(usuario_bp)
         app.register_blueprint(empresa_bp)
@@ -62,25 +63,25 @@ def create_app():
         app.register_blueprint(tanqueo_bp)
         app.register_blueprint(mantenimiento_bp)
         app.register_blueprint(seguro_bp)
-        
+
         # Configurar el user_loader para Flask-Login
         @login_manager.user_loader
         def load_user(user_id):
             return Usuario.query.get(int(user_id))
-    
+
     @app.route('/')
     def home():
         if 'user_id' not in session:
             return redirect(url_for('usuario_bp.login_form'))
         return redirect(url_for('manifiesto_bp.index'))
-    
+
     @app.context_processor
     def utility_processor():
         return {
             'now': datetime.utcnow(),
             'get_flashed_messages': get_flashed_messages
         }
-    
+
     # Manejo de errores
     @app.errorhandler(404)
     def not_found_error(error):
@@ -90,7 +91,7 @@ def create_app():
     def internal_error(error):
         db.session.rollback()
         return render_template('500.html'), 500
-    
+
     return app
 
 if __name__ == '__main__':
