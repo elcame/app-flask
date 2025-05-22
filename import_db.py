@@ -9,10 +9,15 @@ import json
 from datetime import datetime
 
 def import_data():
+    # Configurar la conexión a MySQL
     app = create_app()
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
+    
     with app.app_context():
+        print("Iniciando importación a MySQL...")
         # Crear todas las tablas
         db.create_all()
+        print("Tablas creadas exitosamente")
         
         # Cargar datos del archivo JSON
         with open('db_export.json', 'r', encoding='utf-8') as f:
@@ -20,42 +25,54 @@ def import_data():
         
         # Importar datos en orden para respetar las relaciones
         # 1. Tipos de trabajador
+        print("\nImportando tipos de trabajador...")
         for tipo_data in data['tipos_trabajador']:
             tipo = TipoTrabajador(**tipo_data)
             db.session.add(tipo)
         db.session.commit()
+        print(f"Tipos de trabajador importados: {len(data['tipos_trabajador'])}")
         
         # 2. Empresas
+        print("\nImportando empresas...")
         for emp_data in data['empresas']:
             emp = Empresa(**emp_data)
             db.session.add(emp)
         db.session.commit()
+        print(f"Empresas importadas: {len(data['empresas'])}")
         
         # 3. Tractocamiones
+        print("\nImportando tractocamiones...")
         for trac_data in data['tractocamiones']:
             trac = Tractocamion(**trac_data)
             db.session.add(trac)
         db.session.commit()
+        print(f"Tractocamiones importados: {len(data['tractocamiones'])}")
         
         # 4. Trabajadores
+        print("\nImportando trabajadores...")
         for trab_data in data['trabajadores']:
             trab = Trabajadores(**trab_data)
             db.session.add(trab)
         db.session.commit()
+        print(f"Trabajadores importados: {len(data['trabajadores'])}")
         
         # 5. Usuarios
+        print("\nImportando usuarios...")
         for user_data in data['usuarios']:
             user = Usuario(**user_data)
             db.session.add(user)
         db.session.commit()
+        print(f"Usuarios importados: {len(data['usuarios'])}")
         
         # 6. Manifiestos
+        print("\nImportando manifiestos...")
         for man_data in data['manifiestos']:
             man = Manifiesto(**man_data)
             db.session.add(man)
         db.session.commit()
+        print(f"Manifiestos importados: {len(data['manifiestos'])}")
         
-        print("Datos importados exitosamente")
+        print("\nImportación completada exitosamente")
 
 if __name__ == '__main__':
     import_data() 
