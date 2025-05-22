@@ -12,9 +12,9 @@ def create_app():
     app = Flask(__name__)
     
     # Configuración básica
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.secret_key = os.getenv('SECRET_KEY')
+    app.secret_key = '2d288172ecd5b61ac97539ebbb927bee06d9584fc7a3e813c727429811246e56'
     app.config['UPLOAD_FOLDER'] = 'uploads'
     
     # Asegurarse de que el directorio de uploads existe
