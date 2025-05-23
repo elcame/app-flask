@@ -8,103 +8,97 @@ from dotenv import load_dotenv
 # Cargar variables de entorno
 load_dotenv()
 
-def create_app():
-    app = Flask(__name__)
+app = Flask(__name__)
 
-    # Configuración básica
-    if os.environ.get('RENDER'):
-        # Configuración para Render
-        app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgresql://', 'postgresql://')
-    elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
-        # Configuración para PythonAnywhere
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
-    else:
-        # Configuración local
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:came@DESKTOP-JQSP6UN\\MYSQL/EMPRESAACR?driver=ODBC+Driver+17+for+SQL+Server'
-    
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.secret_key = os.getenv('SECRET_KEY')
-    app.config['UPLOAD_FOLDER'] = 'uploads'
+# Configuración básica
+if os.environ.get('RENDER'):
+    # Configuración para Render
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgresql://', 'postgresql://')
+elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
+    # Configuración para PythonAnywhere
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
+else:
+    # Configuración local
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:came@DESKTOP-JQSP6UN\\MYSQL/EMPRESAACR?driver=ODBC+Driver+17+for+SQL+Server'
 
-    # Asegurarse de que el directorio de uploads existe
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = os.getenv('SECRET_KEY')
+app.config['UPLOAD_FOLDER'] = 'uploads'
 
-    # Configuración de Flask-Login
-    login_manager = LoginManager()
-    login_manager.init_app(app)
-    login_manager.login_view = 'usuario_bp.login_form'
-    login_manager.login_message = 'Por favor inicie sesión para acceder a esta página.'
-    login_manager.login_message_category = 'info'
+# Asegurarse de que el directorio de uploads existe
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    # Inicialización de extensiones
-    db.init_app(app)
+# Configuración de Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'usuario_bp.login_form'
+login_manager.login_message = 'Por favor inicie sesión para acceder a esta página.'
+login_manager.login_message_category = 'info'
 
-    # Registro de blueprints
-    with app.app_context():
-        # Importar modelos
-        from models.usuario import Usuario
-        from models.empresa import Empresa
-        from models.tractocamion import Tractocamion
-        from models.tipo_trabajador import TipoTrabajador
-        from models.trabajadores import Trabajadores
-        from models.manifiesto import Manifiesto
+# Inicialización de extensiones
+db.init_app(app)
 
-        # Importar blueprints
-        from routes.usuario_routes import usuario_bp
-        from routes.empresa_routes import empresa_bp
-        from routes.tractocamion_routes import tractocamion_bp
-        from routes.trabajadores_routes import trabajadores_bp
-        from routes.manifiesto_routes import manifiesto_bp
-        from routes.procesar_pdfs_routes import procesar_pdfs_bp
-        from routes.pagos_routes import pagos_bp
-        from routes.tanqueo_routes import tanqueo_bp
-        from routes.mantenimiento_routes import mantenimiento_bp
-        from routes.seguro_routes import seguro_bp
+# Registro de blueprints
+with app.app_context():
+    # Importar modelos
+    from models.usuario import Usuario
+    from models.empresa import Empresa
+    from models.tractocamion import Tractocamion
+    from models.tipo_trabajador import TipoTrabajador
+    from models.trabajadores import Trabajadores
+    from models.manifiesto import Manifiesto
 
-        # Registrar blueprints
-        app.register_blueprint(usuario_bp)
-        app.register_blueprint(empresa_bp)
-        app.register_blueprint(tractocamion_bp)
-        app.register_blueprint(trabajadores_bp)
-        app.register_blueprint(manifiesto_bp)
-        app.register_blueprint(procesar_pdfs_bp)
-        app.register_blueprint(pagos_bp)
-        app.register_blueprint(tanqueo_bp)
-        app.register_blueprint(mantenimiento_bp)
-        app.register_blueprint(seguro_bp)
+    # Importar blueprints
+    from routes.usuario_routes import usuario_bp
+    from routes.empresa_routes import empresa_bp
+    from routes.tractocamion_routes import tractocamion_bp
+    from routes.trabajadores_routes import trabajadores_bp
+    from routes.manifiesto_routes import manifiesto_bp
+    from routes.procesar_pdfs_routes import procesar_pdfs_bp
+    from routes.pagos_routes import pagos_bp
+    from routes.tanqueo_routes import tanqueo_bp
+    from routes.mantenimiento_routes import mantenimiento_bp
+    from routes.seguro_routes import seguro_bp
 
-        # Configurar el user_loader para Flask-Login
-        @login_manager.user_loader
-        def load_user(user_id):
-            return Usuario.query.get(int(user_id))
+    # Registrar blueprints
+    app.register_blueprint(usuario_bp)
+    app.register_blueprint(empresa_bp)
+    app.register_blueprint(tractocamion_bp)
+    app.register_blueprint(trabajadores_bp)
+    app.register_blueprint(manifiesto_bp)
+    app.register_blueprint(procesar_pdfs_bp)
+    app.register_blueprint(pagos_bp)
+    app.register_blueprint(tanqueo_bp)
+    app.register_blueprint(mantenimiento_bp)
+    app.register_blueprint(seguro_bp)
 
-    @app.route('/')
-    def home():
-        if 'user_id' not in session:
-            return redirect(url_for('usuario_bp.login_form'))
-        return redirect(url_for('manifiesto_bp.index'))
+    # Configurar el user_loader para Flask-Login
+    @login_manager.user_loader
+    def load_user(user_id):
+        return Usuario.query.get(int(user_id))
 
-    @app.context_processor
-    def utility_processor():
-        return {
-            'now': datetime.utcnow(),
-            'get_flashed_messages': get_flashed_messages
-        }
+@app.route('/')
+def home():
+    if 'user_id' not in session:
+        return redirect(url_for('usuario_bp.login_form'))
+    return redirect(url_for('manifiesto_bp.index'))
 
-    # Manejo de errores
-    @app.errorhandler(404)
-    def not_found_error(error):
-        return render_template('404.html'), 404
+@app.context_processor
+def utility_processor():
+    return {
+        'now': datetime.utcnow(),
+        'get_flashed_messages': get_flashed_messages
+    }
 
-    @app.errorhandler(500)
-    def internal_error(error):
-        db.session.rollback()
-        return render_template('500.html'), 500
+# Manejo de errores
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
 
-    return app
-
-# Crear la instancia de la aplicación
-app = create_app()
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return render_template('500.html'), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

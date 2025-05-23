@@ -2,4 +2,4 @@
 set -e
 
 echo "Starting application..."
-exec gunicorn --bind 0.0.0.0:$PORT wsgi:app 
+exec gunicorn --bind 0.0.0.0:${PORT:-5000} app:app
