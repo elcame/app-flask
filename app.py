@@ -109,6 +109,9 @@ def internal_error(error):
 def import_data():
     try:
         with app.app_context():
+            # Eliminar todas las tablas existentes
+            db.drop_all()
+            
             # Crear todas las tablas sin restricciones
             db.create_all()
             
