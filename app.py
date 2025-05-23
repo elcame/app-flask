@@ -1,9 +1,10 @@
-from flask import Flask, redirect, url_for, session, flash, get_flashed_messages , render_template
+from flask import Flask, redirect, url_for, session, flash, get_flashed_messages , render_template, jsonify
 from extensions import db
-from flask_login import LoginManager
+from flask_login import LoginManager, login_required
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+import json
 
 # Cargar variables de entorno
 load_dotenv()
@@ -103,6 +104,61 @@ def not_found_error(error):
 def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
+
+@app.route('/import-data', methods=['POST'])
+@login_required
+def import_data():
+    try:
+        # Verificar si el usuario es administrador
+        if not session.get('is_admin'):
+            return jsonify({'error': 'No tienes permisos para realizar esta acción'}), 403
+
+        # Cargar datos del archivo JSON
+        with open('db_export.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        # Importar datos en orden para respetar las relaciones
+        # 1. Tipos de trabajador
+        for tipo_data in data['tipos_trabajador']:
+            tipo = TipoTrabajador(**tipo_data)
+            db.session.add(tipo)
+        db.session.commit()
+        
+        # 2. Empresas
+        for emp_data in data['empresas']:
+            emp = Empresa(**emp_data)
+            db.session.add(emp)
+        db.session.commit()
+        
+        # 3. Tractocamiones
+        for trac_data in data['tractocamiones']:
+            trac = Tractocamion(**trac_data)
+            db.session.add(trac)
+        db.session.commit()
+        
+        # 4. Trabajadores
+        for trab_data in data['trabajadores']:
+            trab = Trabajadores(**trab_data)
+            db.session.add(trab)
+        db.session.commit()
+        
+        # 5. Usuarios
+        for user_data in data['usuarios']:
+            user = Usuario(**user_data)
+            db.session.add(user)
+        db.session.commit()
+        
+        # 6. Manifiestos
+        for man_data in data['manifiestos']:
+            man = Manifiesto(**man_data)
+            db.session.add(man)
+        db.session.commit()
+        
+        return jsonify({'message': 'Datos importados exitosamente'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 # Configuración para desarrollo local
 if __name__ == '__main__':
