@@ -105,7 +105,7 @@ def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
 
-@app.route('/import-data', methods=['POST'])
+@app.route('/import-data', methods=['GET', 'POST'])
 def import_data():
     try:
         with app.app_context():
