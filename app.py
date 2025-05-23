@@ -108,31 +108,9 @@ def internal_error(error):
 @app.route('/import-data', methods=['POST'])
 def import_data():
     try:
-        # Primero crear el usuario administrador
-        admin = Usuario(
-            NOMBRE="GUILLERMO",
-            EMAIL="EMPRESA_ACR@gmail.com",
-            CONTRASEÑA="ACR",
-            TIPO_USUARIO="ADMINISTRADOR",
-            ID_EMPRESA=1
-        )
-        
-        # Crear la empresa ACR
-        empresa = Empresa(
-            ID_EMPRESA=1,
-            NOMBRE="ACR"
-        )
-        
         with app.app_context():
-            # Crear todas las tablas
+            # Crear todas las tablas sin restricciones
             db.create_all()
-            
-            # Agregar la empresa y el usuario administrador
-            db.session.add(empresa)
-            db.session.commit()
-            
-            db.session.add(admin)
-            db.session.commit()
             
             # Cargar datos del archivo JSON
             with open('db_export.json', 'r', encoding='utf-8') as f:
@@ -145,23 +123,38 @@ def import_data():
                 db.session.add(tipo)
             db.session.commit()
             
-            # 2. Tractocamiones
+            # 2. Empresas
+            for emp_data in data['empresas']:
+                emp = Empresa(**emp_data)
+                db.session.add(emp)
+            db.session.commit()
+            
+            # 3. Tractocamiones
             for trac_data in data['tractocamiones']:
                 trac = Tractocamion(**trac_data)
                 db.session.add(trac)
             db.session.commit()
             
-            # 3. Trabajadores
+            # 4. Trabajadores
             for trab_data in data['trabajadores']:
                 trab = Trabajadores(**trab_data)
                 db.session.add(trab)
             db.session.commit()
             
-            # 4. Manifiestos
+            # 5. Usuarios
+            for user_data in data['usuarios']:
+                user = Usuario(**user_data)
+                db.session.add(user)
+            db.session.commit()
+            
+            # 6. Manifiestos
             for man_data in data['manifiestos']:
                 man = Manifiesto(**man_data)
                 db.session.add(man)
             db.session.commit()
+            
+            # 7. Agregar restricciones de clave foránea después de importar los datos
+            db.engine.execute('ALTER TABLE seguros ADD CONSTRAINT fk_seguros_tractocamion FOREIGN KEY (placa) REFERENCES "Tractocamion" ("PLACA")')
             
             return jsonify({'message': 'Datos importados exitosamente'}), 200
             
