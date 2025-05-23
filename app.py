@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 # Cargar variables de entorno
 load_dotenv()
 
+# Crear la aplicación Flask
 app = Flask(__name__)
 
 # Configuración básica
@@ -100,6 +101,7 @@ def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
 
+# Configuración para desarrollo local
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
