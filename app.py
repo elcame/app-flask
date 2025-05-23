@@ -106,56 +106,65 @@ def internal_error(error):
     return render_template('500.html'), 500
 
 @app.route('/import-data', methods=['POST'])
-@login_required
 def import_data():
     try:
-        # Verificar si el usuario es administrador
-        if not session.get('is_admin'):
-            return jsonify({'error': 'No tienes permisos para realizar esta acción'}), 403
-
-        # Cargar datos del archivo JSON
-        with open('db_export.json', 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        # Primero crear el usuario administrador
+        admin = Usuario(
+            NOMBRE="GUILLERMO",
+            EMAIL="EMPRESA_ACR@gmail.com",
+            CONTRASEÑA="ACR",
+            TIPO_USUARIO="ADMINISTRADOR",
+            ID_EMPRESA=1
+        )
         
-        # Importar datos en orden para respetar las relaciones
-        # 1. Tipos de trabajador
-        for tipo_data in data['tipos_trabajador']:
-            tipo = TipoTrabajador(**tipo_data)
-            db.session.add(tipo)
-        db.session.commit()
+        # Crear la empresa ACR
+        empresa = Empresa(
+            ID_EMPRESA=1,
+            NOMBRE="ACR"
+        )
         
-        # 2. Empresas
-        for emp_data in data['empresas']:
-            emp = Empresa(**emp_data)
-            db.session.add(emp)
-        db.session.commit()
-        
-        # 3. Tractocamiones
-        for trac_data in data['tractocamiones']:
-            trac = Tractocamion(**trac_data)
-            db.session.add(trac)
-        db.session.commit()
-        
-        # 4. Trabajadores
-        for trab_data in data['trabajadores']:
-            trab = Trabajadores(**trab_data)
-            db.session.add(trab)
-        db.session.commit()
-        
-        # 5. Usuarios
-        for user_data in data['usuarios']:
-            user = Usuario(**user_data)
-            db.session.add(user)
-        db.session.commit()
-        
-        # 6. Manifiestos
-        for man_data in data['manifiestos']:
-            man = Manifiesto(**man_data)
-            db.session.add(man)
-        db.session.commit()
-        
-        return jsonify({'message': 'Datos importados exitosamente'}), 200
-        
+        with app.app_context():
+            # Crear todas las tablas
+            db.create_all()
+            
+            # Agregar la empresa y el usuario administrador
+            db.session.add(empresa)
+            db.session.commit()
+            
+            db.session.add(admin)
+            db.session.commit()
+            
+            # Cargar datos del archivo JSON
+            with open('db_export.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Importar datos en orden para respetar las relaciones
+            # 1. Tipos de trabajador
+            for tipo_data in data['tipos_trabajador']:
+                tipo = TipoTrabajador(**tipo_data)
+                db.session.add(tipo)
+            db.session.commit()
+            
+            # 2. Tractocamiones
+            for trac_data in data['tractocamiones']:
+                trac = Tractocamion(**trac_data)
+                db.session.add(trac)
+            db.session.commit()
+            
+            # 3. Trabajadores
+            for trab_data in data['trabajadores']:
+                trab = Trabajadores(**trab_data)
+                db.session.add(trab)
+            db.session.commit()
+            
+            # 4. Manifiestos
+            for man_data in data['manifiestos']:
+                man = Manifiesto(**man_data)
+                db.session.add(man)
+            db.session.commit()
+            
+            return jsonify({'message': 'Datos importados exitosamente'}), 200
+            
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
