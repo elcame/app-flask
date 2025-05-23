@@ -153,9 +153,6 @@ def import_data():
                 db.session.add(man)
             db.session.commit()
             
-            # 7. Agregar restricciones de clave foránea después de importar los datos
-            db.engine.execute('ALTER TABLE seguros ADD CONSTRAINT fk_seguros_tractocamion FOREIGN KEY (placa) REFERENCES "Tractocamion" ("PLACA")')
-            
             return jsonify({'message': 'Datos importados exitosamente'}), 200
             
     except Exception as e:
