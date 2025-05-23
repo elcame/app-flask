@@ -14,4 +14,5 @@ PyMySQL==1.1.0
 PyMuPDF==1.23.8
 psycopg2-binary==2.9.9
 SQLAlchemy==2.0.23
-whitenoise==6.6.0 
+whitenoise==6.6.0
+pandas==2.1.4 
