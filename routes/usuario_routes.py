@@ -9,6 +9,7 @@ from models.trabajadores import Trabajadores
 from models.tipo_trabajador import TipoTrabajador
 from models.manifiesto import Manifiesto
 from models.pago import Pago
+from flask_login import login_user, logout_user, login_required, current_user
 
 usuario_bp = Blueprint('usuario_bp', __name__)
 
@@ -74,24 +75,28 @@ def login():
     contraseña = request.form['contraseña']
     usuario = Usuario.query.filter_by(EMAIL=email, CONTRASEÑA=contraseña).first()
     if usuario:
-        session['usuario_id'] = usuario.ID_USUARIO
+        login_user(usuario)
         session['id_empresa'] = usuario.ID_EMPRESA
         return redirect(url_for('usuario_bp.inicio'))
     else:
         return 'Login failed', 401
 
+@usuario_bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('usuario_bp.login_form'))
+
 @usuario_bp.route('/inicio', methods=['GET'])
+@login_required
 def inicio():
-    if 'usuario_id' not in session:
-        return redirect(url_for('usuario_bp.login_form'))
-    id_empresa = session['id_empresa']
+    id_empresa = current_user.ID_EMPRESA
     tractocamiones = Tractocamion.query.filter_by(ID_EMPRESA=id_empresa).all()
     trabajadores = db.session.query(Trabajadores, TipoTrabajador).join(TipoTrabajador, Trabajadores.ID_TIPO == TipoTrabajador.ID_TIPO).filter(Trabajadores.ID_EMPRESA == id_empresa).all()
     manifiestos = Manifiesto.query.all()
     tipos_trabajador = TipoTrabajador.query.all()
     pagos = Pago.query.all()
     return render_template('inicio.html', tractocamiones=tractocamiones, trabajadores=trabajadores, manifiestos=manifiestos, tipos_trabajador=tipos_trabajador, pagos=pagos)
-
 
 @usuario_bp.route('/upload_folder', methods=['POST'])
 def upload_folder():
@@ -141,6 +146,7 @@ def manifiestos():
     trabajadores = Trabajadores.query.filter_by(ID_EMPRESA=id_empresa).all()
     tractocamiones = Tractocamion.query.filter_by(ID_EMPRESA=id_empresa).all()
     return render_template('manifiesto.html', trabajadores=trabajadores, tractocamiones=tractocamiones)
+
 @usuario_bp.route('/listar_carpetas', methods=['GET'])
 def listar_carpetas():
     try:

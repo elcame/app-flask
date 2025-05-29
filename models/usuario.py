@@ -1,6 +1,7 @@
 from extensions import db
+from flask_login import UserMixin
 
-class Usuario(db.Model):
+class Usuario(db.Model, UserMixin):
     __tablename__ = 'Usuario'
     ID_USUARIO = db.Column(db.Integer, primary_key=True)
     NOMBRE = db.Column(db.String(50), nullable=False)
@@ -8,6 +9,9 @@ class Usuario(db.Model):
     CONTRASEÑA = db.Column(db.String(100), nullable=False)
     TIPO_USUARIO = db.Column(db.String(50), nullable=False)
     ID_EMPRESA = db.Column(db.Integer, db.ForeignKey('Empresa.ID_EMPRESA'), nullable=True)
+
+    def get_id(self):
+        return str(self.ID_USUARIO)
 
     def as_dict(self):
         return {
