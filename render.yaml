@@ -11,6 +11,10 @@ services:
         fromDatabase:
           name: acr-db
           property: connectionString
+      - key: RENDER
+        value: "true"
+      - key: SECRET_KEY
+        value: 2d288172ecd5b61ac97539ebbb927bee06d9584fc7a3e813c727429811246e56
     disk:
       name: uploads
       mountPath: /tmp/uploads
