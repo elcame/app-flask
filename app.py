@@ -19,19 +19,24 @@ if os.environ.get('RENDER'):
     if database_url and database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    # En Render, usamos una carpeta temporal para los uploads
+    app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
 elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
     # Configuración para PythonAnywhere
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
+    app.config['UPLOAD_FOLDER'] = 'uploads'
 else:
     # Configuración local
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://acr_db_user:8QBqTTLlIDOD4ROq1vLWxfRCDzBtvOPB@dpg-d0nld0qli9vc73a1ng9g-a.oregon-postgres.render.com/acr_db'
+    app.config['UPLOAD_FOLDER'] = 'uploads'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'default-secret-key'
-app.config['UPLOAD_FOLDER'] = 'uploads'
 
-# Asegurarse de que el directorio de uploads existe
+# Crear carpetas necesarias
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], '1'), exist_ok=True)
+os.makedirs('excel', exist_ok=True)
 
 # Configuración de Flask-Login
 login_manager = LoginManager()

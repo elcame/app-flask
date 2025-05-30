@@ -4,6 +4,7 @@ from extensions.procesar_pdfs import procesar_pdfs_en_carpeta_para_post
 import json
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from flask import current_app
 
 procesar_pdfs_bp = Blueprint('procesar_pdfs_bp', __name__)
 
@@ -122,4 +123,7 @@ def obtener_carpetas_uploads():
 
 @procesar_pdfs_bp.route('/uploads/<path:filename>')
 def serve_uploads(filename):
-    return send_from_directory('uploads', filename)
+    try:
+        return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
