@@ -76,6 +76,7 @@ def login():
     usuario = Usuario.query.filter_by(EMAIL=email, CONTRASEÑA=contraseña).first()
     if usuario:
         login_user(usuario)
+        session['user_id'] = usuario.ID_USUARIO
         session['id_empresa'] = usuario.ID_EMPRESA
         return redirect(url_for('usuario_bp.inicio'))
     else:
@@ -85,6 +86,7 @@ def login():
 @login_required
 def logout():
     logout_user()
+    session.clear()
     return redirect(url_for('usuario_bp.login_form'))
 
 @usuario_bp.route('/inicio', methods=['GET'])
@@ -99,6 +101,7 @@ def inicio():
     return render_template('inicio.html', tractocamiones=tractocamiones, trabajadores=trabajadores, manifiestos=manifiestos, tipos_trabajador=tipos_trabajador, pagos=pagos)
 
 @usuario_bp.route('/upload_folder', methods=['POST'])
+@login_required
 def upload_folder():
     if 'folder' not in request.files:
         return jsonify({'error': 'No folder part in the request'}), 400
@@ -123,35 +126,33 @@ def upload_folder():
     return jsonify({'message': f'Folder "{folder_name}" uploaded successfully!'}), 200
 
 @usuario_bp.route('/tractocamiones', methods=['GET'])
+@login_required
 def tractocamiones():
-    if 'usuario_id' not in session:
-        return redirect(url_for('usuario_bp.login_form'))
-    id_empresa = session['id_empresa']
+    id_empresa = current_user.ID_EMPRESA
     tractocamiones = Tractocamion.query.filter_by(ID_EMPRESA=id_empresa).all()
     return render_template('tractocamiones.html', tractocamiones=tractocamiones)
 
 @usuario_bp.route('/trabajadores', methods=['GET'])
+@login_required
 def trabajadores():
-    if 'usuario_id' not in session:
-        return redirect(url_for('usuario_bp.login_form'))
-    id_empresa = session['id_empresa']
+    id_empresa = current_user.ID_EMPRESA
     trabajadores = db.session.query(Trabajadores, TipoTrabajador).join(TipoTrabajador, Trabajadores.ID_TIPO == TipoTrabajador.ID_TIPO).filter(Trabajadores.ID_EMPRESA == id_empresa).all()
     return render_template('trabajadores.html', trabajadores=trabajadores)
 
 @usuario_bp.route('/manifiestos', methods=['GET'])
+@login_required
 def manifiestos():
-    if 'usuario_id' not in session:
-        return redirect(url_for('usuario_bp.login_form'))
-    id_empresa = session['id_empresa']
+    id_empresa = current_user.ID_EMPRESA
     trabajadores = Trabajadores.query.filter_by(ID_EMPRESA=id_empresa).all()
     tractocamiones = Tractocamion.query.filter_by(ID_EMPRESA=id_empresa).all()
     return render_template('manifiesto.html', trabajadores=trabajadores, tractocamiones=tractocamiones)
 
 @usuario_bp.route('/listar_carpetas', methods=['GET'])
+@login_required
 def listar_carpetas():
     try:
         # Obtener el ID de la empresa desde la sesión
-        id_empresa = session.get('id_empresa')
+        id_empresa = current_user.ID_EMPRESA
         if not id_empresa:
             return jsonify({'error': 'No se encontró el ID de la empresa en la sesión'}), 400
 

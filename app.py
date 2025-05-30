@@ -3,11 +3,11 @@ from extensions import db
 from flask_login import LoginManager, login_required
 from datetime import datetime
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import json
 
 # Cargar variables de entorno
-load_dotenv()
+# load_dotenv()
 
 # Crear la aplicación Flask
 app = Flask(__name__)
@@ -24,10 +24,10 @@ elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
 else:
     # Configuración local
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:came@DESKTOP-JQSP6UN\\MYSQL/EMPRESAACR?driver=ODBC+Driver+17+for+SQL+Server'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://acr_db_user:8QBqTTLlIDOD4ROq1vLWxfRCDzBtvOPB@dpg-d0nld0qli9vc73a1ng9g-a.oregon-postgres.render.com/acr_db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key')
+app.secret_key = 'default-secret-key'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
 # Asegurarse de que el directorio de uploads existe
@@ -165,4 +165,4 @@ def import_data():
 # Configuración para desarrollo local
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
