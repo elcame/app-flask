@@ -51,8 +51,8 @@ def procesar_pdfs():
         
         print(f"Procesando PDFs en la carpeta: {carpeta}")
         ruta_completa = os.path.join(UPLOAD_FOLDER, carpeta)
-        procesar_pdfs_en_carpeta_para_post(ruta_completa, 'http://localhost:5000/manifiestos')
-        return jsonify({'message': 'Procesamiento completado'}), 200
+        resultados = procesar_pdfs_en_carpeta_para_post(ruta_completa)
+        return jsonify({'message': 'Procesamiento completado', 'resultados': resultados}), 200
     except Exception as e:
         print(f"Error al procesar PDFs: {e}")
         return jsonify({'error': str(e)}), 500
