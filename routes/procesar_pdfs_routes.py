@@ -8,11 +8,12 @@ from werkzeug.utils import secure_filename
 from flask import current_app
 import requests
 import re
+import shutil
 
 procesar_pdfs_bp = Blueprint('procesar_pdfs_bp', __name__)
 
-# Configuración de la carpeta de uploads
-UPLOAD_FOLDER = os.path.join('uploads', '1')
+# Directorio base para almacenar archivos
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'uploads')
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -35,47 +36,82 @@ def incrementar_contador_local(placa):
     # Devolver el valor actualizado del contador
     return contadores_por_placa[placa]
 
-@procesar_pdfs_bp.route('/upload_folder', methods=['POST'])
-def upload_folder():
+@procesar_pdfs_bp.route('/subir_carpeta', methods=['POST'])
+def subir_carpeta():
     try:
         if 'folder' not in request.files:
             return jsonify({'error': 'No se ha enviado ningún archivo'}), 400
-
-        files = request.files.getlist('folder')
-        if not files:
+            
+        archivos = request.files.getlist('folder')
+        if not archivos:
             return jsonify({'error': 'No se han seleccionado archivos'}), 400
-
-        # Crear una carpeta con la fecha actual
-        fecha_actual = datetime.now().strftime('%d-%m-%Y')
-        carpeta_destino = os.path.join(UPLOAD_FOLDER, fecha_actual)
+            
+        # Crear nombre de carpeta con timestamp
+        timestamp = datetime.now().strftime('%d-%m-%Y')
+        carpeta_destino = os.path.join(UPLOAD_FOLDER, timestamp)
         
+        # Asegurarse que la carpeta existe
         if not os.path.exists(carpeta_destino):
             os.makedirs(carpeta_destino)
-
-        # Guardar cada archivo en la carpeta
-        archivos_guardados = 0
-        for file in files:
-            if file.filename.lower().endswith('.pdf'):
-                # Obtener solo el nombre del archivo sin la ruta
-                nombre_archivo = os.path.basename(file.filename)
-                # Construir la ruta completa usando normpath para manejar espacios
-                filepath = os.path.normpath(os.path.join(carpeta_destino, nombre_archivo))
-                try:
-                    file.save(filepath)
-                    archivos_guardados += 1
-                except Exception as e:
-                    print(f"Error al guardar archivo {nombre_archivo}: {str(e)}")
-                    continue
-
-        if archivos_guardados == 0:
-            return jsonify({'error': 'No se pudo guardar ningún archivo PDF'}), 400
-
+            
+        # Contar PDFs
+        pdf_count = 0
+        
+        # Guardar cada archivo
+        for archivo in archivos:
+            if archivo.filename.lower().endswith('.pdf'):
+                filename = secure_filename(archivo.filename)
+                archivo.save(os.path.join(carpeta_destino, filename))
+                pdf_count += 1
+                
         return jsonify({
-            'message': f'Se guardaron {archivos_guardados} archivos PDF correctamente',
-            'archivos_guardados': archivos_guardados
+            'mensaje': f'Se subieron {pdf_count} archivos PDF correctamente',
+            'carpeta': timestamp
         }), 200
+        
     except Exception as e:
         print(f"Error al subir carpeta: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@procesar_pdfs_bp.route('/listar_carpetas', methods=['GET'])
+def listar_carpetas():
+    try:
+        carpetas = []
+        for carpeta in os.listdir(UPLOAD_FOLDER):
+            ruta_carpeta = os.path.join(UPLOAD_FOLDER, carpeta)
+            if os.path.isdir(ruta_carpeta):
+                # Contar PDFs en la carpeta
+                pdf_count = len([f for f in os.listdir(ruta_carpeta) if f.lower().endswith('.pdf')])
+                # Obtener fecha de creación
+                fecha = datetime.fromtimestamp(os.path.getctime(ruta_carpeta)).strftime('%Y-%m-%d %H:%M:%S')
+                carpetas.append({
+                    'nombre': carpeta,
+                    'pdfs': pdf_count,
+                    'fecha': fecha
+                })
+        return jsonify(carpetas), 200
+    except Exception as e:
+        print(f"Error al listar carpetas: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@procesar_pdfs_bp.route('/eliminar_carpeta/<nombre>', methods=['DELETE'])
+def eliminar_carpeta(nombre):
+    try:
+        carpeta = os.path.join(UPLOAD_FOLDER, nombre)
+        if os.path.exists(carpeta):
+            shutil.rmtree(carpeta)
+            return jsonify({'mensaje': 'Carpeta eliminada correctamente'}), 200
+        return jsonify({'error': 'Carpeta no encontrada'}), 404
+    except Exception as e:
+        print(f"Error al eliminar carpeta: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@procesar_pdfs_bp.route('/ver_pdf/<path:filename>')
+def ver_pdf(filename):
+    try:
+        return send_file(os.path.join(UPLOAD_FOLDER, filename), mimetype='application/pdf')
+    except Exception as e:
+        print(f"Error al ver PDF: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @procesar_pdfs_bp.route('/procesar_pdfs', methods=['GET', 'POST'])
@@ -326,22 +362,6 @@ def serve_uploads(filename):
     except Exception as e:
         return jsonify({'error': str(e)}), 404
 
-@procesar_pdfs_bp.route('/eliminar_carpeta/<carpeta>', methods=['DELETE'])
-def eliminar_carpeta(carpeta):
-    try:
-        ruta_carpeta = os.path.join(UPLOAD_FOLDER, carpeta)
-        if not os.path.exists(ruta_carpeta):
-            return jsonify({'error': 'La carpeta no existe'}), 404
-
-        # Eliminar la carpeta y todo su contenido
-        import shutil
-        shutil.rmtree(ruta_carpeta)
-        
-        return jsonify({'message': f'Carpeta {carpeta} eliminada correctamente'}), 200
-    except Exception as e:
-        print(f"Error al eliminar carpeta: {e}")
-        return jsonify({'error': str(e)}), 500
-
 @procesar_pdfs_bp.route('/datos_no_procesados', methods=['GET'])
 def obtener_datos_no_procesados():
     try:
@@ -516,41 +536,3 @@ def actualizar_dato_procesado_por_id(id, data):
     except Exception as e:
         print(f"Error al actualizar dato procesado: {e}")
         return False
-
-@procesar_pdfs_bp.route('/ver_pdf/<path:pdf_path>')
-def ver_pdf(pdf_path):
-    try:
-        # Decodificar la URL si está codificada
-        pdf_path = pdf_path.replace('%20', ' ')
-        
-        # Construir la ruta completa del PDF
-        ruta_completa = os.path.join(os.getcwd(), pdf_path.lstrip('/'))
-        print(f"Intentando abrir PDF en ruta: {ruta_completa}")
-        
-        # Verificar que el archivo existe
-        if not os.path.exists(ruta_completa):
-            print(f"PDF no encontrado en ruta: {ruta_completa}")
-            # Intentar buscar en la carpeta uploads
-            ruta_alternativa = os.path.join(os.getcwd(), 'uploads', pdf_path.lstrip('/uploads/'))
-            print(f"Intentando ruta alternativa: {ruta_alternativa}")
-            if os.path.exists(ruta_alternativa):
-                ruta_completa = ruta_alternativa
-            else:
-                # Intentar una última vez con la ruta completa desde uploads/1
-                ruta_final = os.path.join(os.getcwd(), 'uploads', '1', pdf_path.lstrip('/uploads/1/'))
-                print(f"Intentando ruta final: {ruta_final}")
-                if os.path.exists(ruta_final):
-                    ruta_completa = ruta_final
-                else:
-                    return jsonify({'error': 'PDF no encontrado'}), 404
-        
-        # Obtener el directorio y el nombre del archivo
-        directorio = os.path.dirname(ruta_completa)
-        archivo = os.path.basename(ruta_completa)
-        print(f"Sirviendo PDF desde directorio: {directorio}, archivo: {archivo}")
-        
-        # Enviar el archivo
-        return send_from_directory(directorio, archivo, mimetype='application/pdf')
-    except Exception as e:
-        print(f"Error al servir PDF: {str(e)}")
-        return jsonify({'error': str(e)}), 500

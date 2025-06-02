@@ -563,5 +563,51 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+    function cargarManifiestos() {
+        fetch('/manifiestos')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.querySelector('#manifiestosTable tbody');
+                tbody.innerHTML = '';
+                
+                data.forEach(manifiesto => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${manifiesto.id}</td>
+                        <td>${manifiesto.placa}</td>
+                        <td>${manifiesto.conductor}</td>
+                        <td>${manifiesto.origen}</td>
+                        <td>${manifiesto.destino}</td>
+                        <td>${manifiesto.fecha}</td>
+                        <td>${manifiesto.mes}</td>
+                        <td>${manifiesto.kof}</td>
+                        <td>${manifiesto.remesa}</td>
+                        <td>${manifiesto.empresa}</td>
+                        <td>${manifiesto.valor_flete}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary me-1" onclick="editarManifiesto('${manifiesto.id}')">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button class="btn btn-sm btn-danger me-1" onclick="eliminarManifiesto('${manifiesto.id}')">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                            <button class="btn btn-sm btn-info" onclick="verPDF('${manifiesto.pdf_path || ''}')">
+                                <i class="fas fa-file-pdf"></i> Ver PDF
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                // Actualizar totales
+                actualizarTotales(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarMensaje('Error al cargar los manifiestos', 'error');
+            });
+    }
+    </script>
 </body>
 </html>
