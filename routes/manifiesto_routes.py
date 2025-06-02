@@ -8,7 +8,7 @@ manifiesto_bp = Blueprint('manifiesto_bp', __name__)
 
 @manifiesto_bp.route('/')
 def index():
-    return redirect(url_for('auth.login'))
+    return redirect(url_for('usuario_bp.login'))
 
 @manifiesto_bp.route('/obtenermanifiestos', methods=['GET'])
 def obtener_manifiestos():
