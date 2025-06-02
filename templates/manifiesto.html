@@ -62,6 +62,12 @@
             padding: 10px;
             vertical-align: middle;
         }
+
+        .error-field {
+            background-color: #ffebee !important;
+            color: #c62828 !important;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -122,7 +128,7 @@
                 <!-- Main Content Area -->
                 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                     <!-- Secciones -->
-                    <div id="manifiestosSection" class="section active">
+                    <div id="manifiestosSection" class="section" style="display: block;">
                         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                             <h1 class="h2">Gestión de Manifiestos</h1>
                             <div class="d-flex align-items-center">
@@ -238,7 +244,7 @@
                         </div>
                     </div>
 
-                    <div id="otrosSection" class="section">
+                    <div id="otrosSection" class="section" style="display: none;">
                         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                             <h1 class="h2">Procesamiento de PDFs</h1>
                         </div>
@@ -267,9 +273,22 @@
                                 <h5 class="card-title">
                                     <i class="fas fa-folder"></i> Carpetas Subidas
                                 </h5>
-                                <button class="btn btn-primary mb-3" id="listarCarpetasButton">
-                                    <i class="fas fa-sync"></i> Actualizar Lista
-                                </button>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <button class="btn btn-primary" id="listarCarpetasButton">
+                                        <i class="fas fa-sync"></i> Actualizar Lista
+                                    </button>
+                                    <div class="card bg-info text-white">
+                                        <div class="card-body py-2 px-3">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-file-pdf fa-2x me-2"></i>
+                                                <div>
+                                                    <h6 class="card-title mb-0">Total PDFs</h6>
+                                                    <h3 class="mb-0" id="totalPDFs">0</h3>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="table-responsive">
                                     <table class="table table-hover" id="carpetasTable">
                                         <thead>
@@ -300,11 +319,13 @@
                                         <option value="">Seleccione una carpeta</option>
                                     </select>
                                 </div>
-                                <button class="btn btn-primary" id="procesarCarpetaButton">
+                                <button class="btn btn-primary" id="procesarCarpetaButton" onclick="handleProcesarCarpeta()">
                                     <i class="fas fa-cogs"></i> Procesar Carpeta
                                 </button>
-                                <div class="progress mt-3 d-none" id="processProgress">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                                <div class="progress mt-3" id="progressBar" style="display: none;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">
+                                        <span id="progressText"></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -340,84 +361,199 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Tabla de Datos No Procesados -->
+                        <div class="card mt-4">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="mb-0">Datos No Procesados</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="tablaNoProcesados">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Placa</th>
+                                                <th>Conductor</th>
+                                                <th>Origen</th>
+                                                <th>Destino</th>
+                                                <th>Fecha</th>
+                                                <th>Mes</th>
+                                                <th>KOF</th>
+                                                <th>Remesa</th>
+                                                <th>Empresa</th>
+                                                <th>Valor Flete</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Los datos se cargarán dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </main>
             </div>
         </div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal fade" id="editManifiestoModal" tabindex="-1" role="dialog" aria-labelledby="editManifiestoModalLabel">
-        <div class="modal-dialog modal-lg" role="document">
+    <!-- Modal para editar manifiesto -->
+    <div class="modal fade" id="editManifiestoModal" tabindex="-1" aria-labelledby="editManifiestoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editManifiestoModalLabel">
-                        <i class="fas fa-edit"></i> Editar Manifiesto
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    <h5 class="modal-title" id="editManifiestoModalLabel">Editar Manifiesto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="editManifiestoForm">
-                        <input type="hidden" name="id">
+                    <form id="editManifiestoForm" onsubmit="guardarCambiosManifiesto(event)">
+                        <input type="hidden" id="manifiestoId" name="manifiestoId">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="placa" class="form-label">Placa</label>
-                                <input type="text" class="form-control" id="placa" name="placa" required>
+                                <label for="placaManifiesto" class="form-label">Placa</label>
+                                <input type="text" class="form-control" id="placaManifiesto" name="placaManifiesto" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="conductor" class="form-label">Conductor</label>
-                                <input type="text" class="form-control" id="conductor" name="conductor" required>
+                                <label for="conductorManifiesto" class="form-label">Conductor</label>
+                                <input type="text" class="form-control" id="conductorManifiesto" name="conductorManifiesto" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="origen" class="form-label">Origen</label>
-                                <input type="text" class="form-control" id="origen" name="origen" required>
+                                <label for="origenManifiesto" class="form-label">Origen</label>
+                                <input type="text" class="form-control" id="origenManifiesto" name="origenManifiesto" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="destino" class="form-label">Destino</label>
-                                <input type="text" class="form-control" id="destino" name="destino" required>
+                                <label for="destinoManifiesto" class="form-label">Destino</label>
+                                <input type="text" class="form-control" id="destinoManifiesto" name="destinoManifiesto" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="fecha" class="form-label">Fecha</label>
-                                <input type="date" class="form-control" id="fecha" name="fecha" required>
+                                <label for="fechaManifiesto" class="form-label">Fecha</label>
+                                <input type="date" class="form-control" id="fechaManifiesto" name="fechaManifiesto" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="mes" class="form-label">Mes</label>
-                                <input type="text" class="form-control" id="mes" name="mes" required>
+                                <label for="mesManifiesto" class="form-label">Mes</label>
+                                <select class="form-select" id="mesManifiesto" name="mesManifiesto" required>
+                                    <option value="ENERO">Enero</option>
+                                    <option value="FEBRERO">Febrero</option>
+                                    <option value="MARZO">Marzo</option>
+                                    <option value="ABRIL">Abril</option>
+                                    <option value="MAYO">Mayo</option>
+                                    <option value="JUNIO">Junio</option>
+                                    <option value="JULIO">Julio</option>
+                                    <option value="AGOSTO">Agosto</option>
+                                    <option value="SEPTIEMBRE">Septiembre</option>
+                                    <option value="OCTUBRE">Octubre</option>
+                                    <option value="NOVIEMBRE">Noviembre</option>
+                                    <option value="DICIEMBRE">Diciembre</option>
+                                </select>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="kof" class="form-label">KOF</label>
-                                <input type="text" class="form-control" id="kof" name="kof" required>
+                            <div class="col-md-4 mb-3">
+                                <label for="kofManifiesto" class="form-label">KOF</label>
+                                <input type="text" class="form-control" id="kofManifiesto" name="kofManifiesto" required>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="remesa" class="form-label">Remesa</label>
-                                <input type="text" class="form-control" id="remesa" name="remesa" required>
+                            <div class="col-md-4 mb-3">
+                                <label for="remesaManifiesto" class="form-label">Remesa</label>
+                                <input type="text" class="form-control" id="remesaManifiesto" name="remesaManifiesto" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="empresaManifiesto" class="form-label">Empresa</label>
+                                <input type="text" class="form-control" id="empresaManifiesto" name="empresaManifiesto" required>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="empresa" class="form-label">Empresa</label>
-                                <input type="text" class="form-control" id="empresa" name="empresa" required>
+                            <div class="col-md-12 mb-3">
+                                <label for="valor_fleteManifiesto" class="form-label">Valor Flete</label>
+                                <input type="number" step="0.01" class="form-control" id="valor_fleteManifiesto" name="valor_fleteManifiesto" required>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="valor_flete" class="form-label">Valor Flete</label>
-                                <input type="number" class="form-control" id="valor_flete" name="valor_flete" required>
-                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                    <button type="button" class="btn btn-primary" id="saveManifiestoBtn">
-                        <i class="fas fa-save"></i> Guardar Cambios
-                    </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar datos procesados -->
+    <div class="modal fade" id="editDatosProcesadosModal" tabindex="-1" aria-labelledby="editDatosProcesadosModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editDatosProcesadosModalLabel">Editar Datos Procesados</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editDatosProcesadosForm">
+                        <input type="hidden" name="datosProcesadosId" id="datosProcesadosId">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="placaProcesados" class="form-label">Placa</label>
+                                <input type="text" class="form-control" id="placaProcesados" name="placaProcesados" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="conductorProcesados" class="form-label">Conductor</label>
+                                <input type="text" class="form-control" id="conductorProcesados" name="conductorProcesados" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="origenProcesados" class="form-label">Origen</label>
+                                <input type="text" class="form-control" id="origenProcesados" name="origenProcesados" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="destinoProcesados" class="form-label">Destino</label>
+                                <input type="text" class="form-control" id="destinoProcesados" name="destinoProcesados" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="fechaProcesados" class="form-label">Fecha</label>
+                                <input type="date" class="form-control" id="fechaProcesados" name="fechaProcesados" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="mesProcesados" class="form-label">Mes</label>
+                                <input type="text" class="form-control" id="mesProcesados" name="mesProcesados" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="kofProcesados" class="form-label">KOF</label>
+                                <input type="text" class="form-control" id="kofProcesados" name="kofProcesados" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="remesaProcesados" class="form-label">Remesa</label>
+                                <input type="text" class="form-control" id="remesaProcesados" name="remesaProcesados" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="empresaProcesados" class="form-label">Empresa</label>
+                                <input type="text" class="form-control" id="empresaProcesados" name="empresaProcesados" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="valor_fleteProcesados" class="form-label">Valor Flete</label>
+                                <input type="number" step="0.01" class="form-control" id="valor_fleteProcesados" name="valor_fleteProcesados" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-success" id="crearManifiestoProcesadosBtn" style="display: none;">
+                                <i class="fas fa-plus"></i> CREAR MANIFIESTO
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="guardarCambiosProcesadosBtn">Guardar Cambios</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
