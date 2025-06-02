@@ -1,10 +1,15 @@
-from flask import Blueprint, request, jsonify, render_template, send_from_directory, current_app
+from flask import Blueprint, request, jsonify, render_template, send_from_directory, current_app, redirect, url_for
 from extensions import db
 from models.manifiesto import Manifiesto
 import os
 
 
 manifiesto_bp = Blueprint('manifiesto_bp', __name__)
+
+@manifiesto_bp.route('/')
+def index():
+    return redirect(url_for('auth.login'))
+
 @manifiesto_bp.route('/obtenermanifiestos', methods=['GET'])
 def obtener_manifiestos():
     try:
