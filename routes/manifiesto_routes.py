@@ -10,7 +10,7 @@ def obtener_manifiestos():
     try:
         print("Obteniendo todos los manifiestos")
         manifiestos = Manifiesto.query.all()
-        return jsonify([manifiesto.as_dict() for manifiesto in manifiestos]), 200
+        return jsonify([manifiesto.to_dict() for manifiesto in manifiestos]), 200
     except Exception as e:
         print(f"Error al obtener manifiestos: {e}")
         return jsonify({'error': str(e)}), 500
@@ -41,15 +41,21 @@ def add_manifiesto():
         db.session.rollback()
         return jsonify({'error': str(e), 'data': data}), 500
 
-@manifiesto_bp.route('/manifiestos/<string:id>', methods=['DELETE'])
+@manifiesto_bp.route('/manifiestos/<id>', methods=['DELETE'])
 def delete_manifiesto(id):
-    manifiesto = Manifiesto.query.get(id)
-    if manifiesto:
+    try:
+        # Convertir el ID a string ya que en la base de datos es character varying
+        manifiesto = Manifiesto.query.get(str(id))
+        if not manifiesto:
+            return jsonify({'error': 'Manifiesto no encontrado'}), 404
+            
         db.session.delete(manifiesto)
         db.session.commit()
-        return jsonify({'message': 'Manifiesto deleted!'}), 200
-    else:
-        return jsonify({'message': 'Manifiesto not found'}), 404
+        return jsonify({'message': 'Manifiesto eliminado correctamente'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al eliminar manifiesto: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 @manifiesto_bp.route('/manifiestos/eliminar_todos', methods=['DELETE'])
@@ -64,26 +70,57 @@ def eliminar_todos_manifiestos():
         return jsonify({'error': str(e)}), 500
 
 
-@manifiesto_bp.route('/manifiestos/<int:id>', methods=['PUT'])
-def actualizar_manifiesto(id):
-    data = request.get_json()
+@manifiesto_bp.route('/manifiestos/<id>', methods=['PUT'])
+def update_manifiesto(id):
     try:
-        manifiesto = Manifiesto.query.get(id)
+        # Convertir el ID a string ya que en la base de datos es character varying
+        id_str = str(id)
+        manifiesto = Manifiesto.query.filter(Manifiesto.id == id_str).first()
         if not manifiesto:
             return jsonify({'error': 'Manifiesto no encontrado'}), 404
-
-        # Actualizar los campos del manifiesto
-        manifiesto.placa = data.get('placa', manifiesto.placa)
-        manifiesto.conductor = data.get('conductor', manifiesto.conductor)
-        manifiesto.origen = data.get('origen', manifiesto.origen)
-        manifiesto.destino = data.get('destino', manifiesto.destino)
-        manifiesto.fecha = data.get('fecha', manifiesto.fecha)
-        manifiesto.mes = data.get('mes', manifiesto.mes)
-        manifiesto.kof1 = data.get('kof1', manifiesto.kof1)
-        manifiesto.remesa = data.get('remesa', manifiesto.remesa)
-        manifiesto.empresa = data.get('empresa', manifiesto.empresa)
-        manifiesto.valor_flete = data.get('valor_flete', manifiesto.valor_flete)
-
+            
+        data = request.get_json()
+        
+        # Mapeo de meses de español a inglés
+        meses = {
+            'ENERO': 'JANUARY',
+            'FEBRERO': 'FEBRUARY',
+            'MARZO': 'MARCH',
+            'ABRIL': 'APRIL',
+            'MAYO': 'MAY',
+            'JUNIO': 'JUNE',
+            'JULIO': 'JULY',
+            'AGOSTO': 'AUGUST',
+            'SEPTIEMBRE': 'SEPTEMBER',
+            'OCTUBRE': 'OCTOBER',
+            'NOVIEMBRE': 'NOVEMBER',
+            'DICIEMBRE': 'DECEMBER'
+        }
+        
+        # Mapeo de campos en minúsculas a campos del modelo
+        mapeo_campos = {
+            'id': 'id',
+            'placa': 'placa',
+            'conductor': 'conductor',
+            'origen': 'origen',
+            'destino': 'destino',
+            'fecha': 'fecha',
+            'mes': 'mes',
+            'kof': 'kof1',
+            'remesa': 'remesa',
+            'empresa': 'empresa',
+            'valor_flete': 'valor_flete'
+        }
+        
+        # Actualizar cada campo
+        for campo_frontend, campo_modelo in mapeo_campos.items():
+            if campo_frontend in data:
+                valor = data[campo_frontend]
+                # Si es el campo mes, convertir de español a inglés
+                if campo_frontend == 'mes':
+                    valor = meses.get(valor.upper(), valor)
+                setattr(manifiesto, campo_modelo, valor)
+            
         db.session.commit()
         return jsonify({'message': 'Manifiesto actualizado correctamente'}), 200
     except Exception as e:
@@ -92,13 +129,69 @@ def actualizar_manifiesto(id):
     
 
 
-@manifiesto_bp.route('/manifiestos/<string:placa>', methods=['GET'])
+@manifiesto_bp.route('/manifiestos/<id>', methods=['GET'])
+def get_manifiesto(id):
+    try:
+        # Convertir el ID a string ya que en la base de datos es character varying
+        id_str = str(id)
+        print(f"Buscando manifiesto con ID: {id_str}")  # Debug
+        
+        # Obtener el manifiesto usando filter con comparación exacta
+        manifiesto = Manifiesto.query.filter(Manifiesto.id == id_str).first()
+        print(f"Resultado de la búsqueda: {manifiesto}")  # Debug
+        
+        if not manifiesto:
+            print(f"No se encontró el manifiesto con ID: {id_str}")  # Debug
+            return jsonify({'error': 'Manifiesto no encontrado'}), 404
+        
+        # Convertir a diccionario
+        try:
+            manifiesto_dict = manifiesto.to_dict()
+            print(f"Manifiesto convertido a diccionario: {manifiesto_dict}")  # Debug
+            
+            # Verificar que el diccionario no esté vacío
+            if not manifiesto_dict:
+                print("Error: El diccionario está vacío")  # Debug
+                return jsonify({'error': 'Error al convertir manifiesto'}), 500
+            
+            # Verificar que es un diccionario y no una lista
+            if isinstance(manifiesto_dict, list):
+                print("Error: Se recibió una lista en lugar de un diccionario")  # Debug
+                return jsonify({'error': 'Error en el formato de datos'}), 500
+            
+            # Verificar que tenemos todos los campos necesarios
+            campos_requeridos = ['id', 'placa', 'conductor', 'origen', 'destino', 'fecha', 'mes', 'kof', 'remesa', 'empresa', 'valor_flete']
+            campos_faltantes = [campo for campo in campos_requeridos if campo not in manifiesto_dict]
+            if campos_faltantes:
+                print(f"Error: Faltan campos en el diccionario: {campos_faltantes}")  # Debug
+                return jsonify({'error': f'Faltan campos en el manifiesto: {campos_faltantes}'}), 500
+            
+            # Devolver el diccionario directamente
+            response = jsonify(manifiesto_dict)
+            print(f"Respuesta a enviar: {response.get_data(as_text=True)}")  # Debug
+            return response, 200
+            
+        except Exception as e:
+            print(f"Error al convertir manifiesto a diccionario: {str(e)}")  # Debug
+            return jsonify({'error': f'Error al convertir manifiesto: {str(e)}'}), 500
+            
+    except Exception as e:
+        print(f"Error al obtener manifiesto: {str(e)}")  # Debug
+        return jsonify({'error': str(e)}), 500
+
+@manifiesto_bp.route('/manifiestos/placa/<string:placa>', methods=['GET'])
 def obtener_manifiestos_por_placa(placa):
     try:
         # Filtrar manifiestos por placa
         manifiestos = Manifiesto.query.filter_by(placa=placa).all()
-        print(f"Manifiestos encontrados: {len(manifiestos)}")
-        return jsonify([manifiesto.as_dict() for manifiesto in manifiestos]), 200
+        print(f"Manifiestos encontrados para placa {placa}: {len(manifiestos)}")  # Debug
+        
+        # Si solo hay un manifiesto, devolverlo como objeto
+        if len(manifiestos) == 1:
+            return jsonify(manifiestos[0].to_dict()), 200
+            
+        # Si hay múltiples manifiestos, devolver el array
+        return jsonify([manifiesto.to_dict() for manifiesto in manifiestos]), 200
     except Exception as e:
         print(f"Error al obtener manifiestos por placa: {e}")
         return jsonify({'error': str(e)}), 500
@@ -108,17 +201,10 @@ def obtener_manifiestos_por_trabajador(conductor):
     try:
         # Filtrar manifiestos por conductor
         manifiestos = Manifiesto.query.filter_by(conductor=conductor).all()
-        return jsonify([manifiesto.as_dict() for manifiesto in manifiestos]), 200
+        return jsonify([manifiesto.to_dict() for manifiesto in manifiestos]), 200
     except Exception as e:
         print(f"Error al obtener manifiestos por trabajador: {e}")
         return jsonify({'error': str(e)}), 500
-
-@manifiesto_bp.route('/manifiestos/<int:id>', methods=['GET'])
-def get_manifiesto(id):
-    manifiesto = Manifiesto.query.get(id)
-    if not manifiesto:
-        return jsonify({'error': 'Manifiesto no encontrado'}), 404
-    return jsonify(manifiesto.as_dict()), 200
 
 @manifiesto_bp.route('/excel/<path:subpath>')
 def download_excel(subpath):
@@ -172,7 +258,7 @@ def filtrar_manifiestos():
         total_valor_flete = sum(float(m.valor_flete or 0) for m in manifiestos)
         
         return jsonify({
-            'manifiestos': [m.as_dict() for m in manifiestos],
+            'manifiestos': [m.to_dict() for m in manifiestos],
             'total_valor_flete': total_valor_flete
         }), 200
     except Exception as e:
