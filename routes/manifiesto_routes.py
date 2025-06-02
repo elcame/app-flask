@@ -25,7 +25,6 @@ def add_manifiesto():
     try:
         data = request.get_json()
         new_manifiesto = Manifiesto(
-           
             numero=data['NUMERO'],
             placa=data['PLACA'],
             conductor=data['CONDUCTOR'],
@@ -37,7 +36,8 @@ def add_manifiesto():
             kof1=data['KOF'],
             remesa=data['REMESA'],
             empresa=data['EMPRESA'],
-            valor_flete=data['VALOR_FLETE']
+            valor_flete=data['VALOR_FLETE'],
+            pdf_path=data.get('PDF_PATH', '')
         )
         db.session.add(new_manifiesto)
         db.session.commit()

@@ -5,6 +5,7 @@ from datetime import datetime, UTC
 import os
 # from dotenv import load_dotenv
 import json
+from flask_migrate import Migrate
 
 # Cargar variables de entorno
 # load_dotenv()
@@ -49,6 +50,7 @@ login_manager.login_message_category = 'info'
 
 # Inicialización de extensiones
 db.init_app(app)
+migrate = Migrate(app, db)
 
 # Registro de blueprints
 with app.app_context():

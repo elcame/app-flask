@@ -627,18 +627,15 @@ function mostrarDatosProcesados() {
 // Función para ver el PDF
 function verPDF(pdfPath) {
     if (!pdfPath) {
-        mostrarMensaje('No hay PDF disponible para este registro', 'warning');
+        console.warn('No se proporcionó una ruta de PDF');
         return;
     }
     
-    // Asegurarse de que la ruta comience con /uploads/1/
-    if (!pdfPath.startsWith('/uploads/1/')) {
-        pdfPath = `/uploads/1/${pdfPath.replace(/^\/uploads\//, '')}`;
-    }
+    console.log('Intentando abrir PDF:', pdfPath);
     
     // Construir la URL completa para ver el PDF
     const url = `/ver_pdf/${encodeURIComponent(pdfPath)}`;
-    console.log('Intentando abrir PDF en:', url);
+    console.log('URL construida:', url);
     
     // Abrir el PDF en una nueva pestaña
     window.open(url, '_blank');
@@ -731,22 +728,22 @@ function mostrarDatosNoProcesados() {
             data.forEach(dato => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${dato.id || ''}</td>
-                    <td>${dato.placa || ''}</td>
-                    <td>${dato.conductor || ''}</td>
-                    <td>${dato.origen || ''}</td>
-                    <td>${dato.destino || ''}</td>
-                    <td>${dato.fecha || ''}</td>
-                    <td>${dato.mes || ''}</td>
-                    <td>${dato.kof || ''}</td>
-                    <td>${dato.remesa || ''}</td>
-                    <td>${dato.empresa || ''}</td>
-                    <td>${dato.valor_flete || ''}</td>
+                    <td>${dato.ID || ''}</td>
+                    <td>${dato.PLACA || ''}</td>
+                    <td>${dato.CONDUCTOR || ''}</td>
+                    <td>${dato.ORIGEN || ''}</td>
+                    <td>${dato.DESTINO || ''}</td>
+                    <td>${dato.FECHA || ''}</td>
+                    <td>${dato.MES || ''}</td>
+                    <td>${dato.KOF || ''}</td>
+                    <td>${dato.REMESA || ''}</td>
+                    <td>${dato.EMPRESA || ''}</td>
+                    <td>${dato.VALOR_FLETE || ''}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary me-1" onclick="editarDatoNoProcesado('${dato.id}')">
+                        <button class="btn btn-sm btn-primary me-1" onclick="editarDatoNoProcesado('${dato.ID}')">
                             <i class="fas fa-edit"></i> Editar
                         </button>
-                        <button class="btn btn-sm btn-info" onclick="verPDF('${dato.pdf_path || ''}')">
+                        <button class="btn btn-sm btn-info" onclick="verPDF('${dato.PDF_PATH || ''}')">
                             <i class="fas fa-file-pdf"></i> Ver PDF
                         </button>
                     </td>

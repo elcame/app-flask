@@ -19,23 +19,50 @@ def guardar_dato_no_procesado(dato, error=None):
             
         # Ruta del archivo JSON
         archivo_json = os.path.join(carpeta, 'datos_no_procesados.json')
+        print(f"Intentando guardar dato no procesado en: {archivo_json}")
         
         # Cargar datos existentes o crear lista vacía
+        datos = []
         if os.path.exists(archivo_json):
-            with open(archivo_json, 'r', encoding='utf-8') as f:
-                datos = json.load(f)
-        else:
+            try:
+                with open(archivo_json, 'r', encoding='utf-8') as f:
+                    datos = json.load(f)
+            except json.JSONDecodeError as e:
+                print(f"Error al leer el archivo JSON existente: {str(e)}")
+                # Si hay error al leer, crear un nuevo archivo
+                datos = []
+        
+        # Asegurarse que datos es una lista
+        if not isinstance(datos, list):
+            print("El archivo JSON no contiene una lista, creando nueva lista")
             datos = []
             
-        # Agregar el nuevo dato
+        # Agregar el error a los datos
         dato['error'] = error
-        datos.append(dato)
+        
+        # Verificar si el dato ya existe (por ID)
+        existe = False
+        for i, d in enumerate(datos):
+            if d.get('ID') == dato.get('ID'):
+                print(f"Actualizando dato existente con ID: {dato.get('ID')}")
+                datos[i] = dato
+                existe = True
+                break
+        
+        if not existe:
+            print(f"Agregando nuevo dato con ID: {dato.get('ID')}")
+            datos.append(dato)
         
         # Guardar datos actualizados
-        with open(archivo_json, 'w', encoding='utf-8') as f:
-            json.dump(datos, f, ensure_ascii=False, indent=4)
+        try:
+            with open(archivo_json, 'w', encoding='utf-8') as f:
+                json.dump(datos, f, ensure_ascii=False, indent=4)
+            print(f"Dato guardado exitosamente: {dato.get('ID')} - Error: {error}")
+            return True
+        except Exception as e:
+            print(f"Error al escribir en el archivo JSON: {str(e)}")
+            raise
             
-        return True
     except Exception as e:
         print(f"Error al guardar dato no procesado: {str(e)}")
         return False 

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session, flash
 from werkzeug.utils import secure_filename
 import os
 from extensions import db
@@ -50,10 +50,21 @@ def delete_usuario(id):
     else:
         return jsonify({'message': 'Usuario not found'}), 404
 
+@usuario_bp.route('/usuarios/<int:id>', methods=['GET'])
+@login_required
+def get_usuario(id):
+    usuario = db.session.get(Usuario, id)
+    if usuario is None:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    return jsonify(usuario.to_dict())
+
 @usuario_bp.route('/usuarios/<int:id>', methods=['PUT'])
+@login_required
 def update_usuario(id):
-    usuario = Usuario.query.get(id)
-    if usuario:
+    usuario = db.session.get(Usuario, id)
+    if usuario is None:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    else:
         data = request.get_json()
         usuario.NOMBRE = data.get('NOMBRE', usuario.NOMBRE)
         usuario.EMAIL = data.get('EMAIL', usuario.EMAIL)
@@ -62,8 +73,6 @@ def update_usuario(id):
         usuario.ID_EMPRESA = data.get('ID_EMPRESA', usuario.ID_EMPRESA)
         db.session.commit()
         return jsonify({'message': 'Usuario updated!', 'ID_USUARIO': usuario.ID_USUARIO}), 200
-    else:
-        return jsonify({'message': 'Usuario not found'}), 404
 
 @usuario_bp.route('/login', methods=['GET'])
 def login_form():
@@ -71,16 +80,22 @@ def login_form():
 
 @usuario_bp.route('/login', methods=['POST'])
 def login():
-    email = request.form['email']
-    contraseña = request.form['contraseña']
-    usuario = Usuario.query.filter_by(EMAIL=email, CONTRASEÑA=contraseña).first()
-    if usuario:
-        login_user(usuario)
-        session['user_id'] = usuario.ID_USUARIO
-        session['id_empresa'] = usuario.ID_EMPRESA
-        return redirect(url_for('usuario_bp.inicio'))
-    else:
-        return 'Login failed', 401
+    try:
+        email = request.form['email']
+        contraseña = request.form['contraseña']
+        usuario = Usuario.query.filter_by(EMAIL=email, CONTRASEÑA=contraseña).first()
+        if usuario:
+            login_user(usuario)
+            session['user_id'] = usuario.ID_USUARIO
+            session['id_empresa'] = usuario.ID_EMPRESA
+            flash('¡Bienvenido!', 'success')
+            return redirect(url_for('usuario_bp.inicio'))
+        else:
+            flash('Credenciales inválidas. Por favor intente nuevamente.', 'error')
+            return redirect(url_for('usuario_bp.login_form'))
+    except Exception as e:
+        flash(f'Error al iniciar sesión: {str(e)}', 'error')
+        return redirect(url_for('usuario_bp.login_form'))
 
 @usuario_bp.route('/logout')
 @login_required

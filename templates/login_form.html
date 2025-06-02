@@ -7,8 +7,16 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 </head>
 <body>
-    <form action="/login" method="POST">
+    <form action="{{ url_for('usuario_bp.login') }}" method="POST">
         <h1>Login</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" required>
         

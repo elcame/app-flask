@@ -1,0 +1,18 @@
+[
+    {
+        "ID": "4368969",
+        "NUMERO": 2,
+        "PLACA": "TM0534",
+        "CONDUCTOR": "REINALDO ANTONIO NARVAEZ",
+        "ORIGEN": "BARRANQUILLA",
+        "DESTINO": "Santa Marta",
+        "FECHA": null,
+        "MES": "DESCONOCIDO",
+        "KOF": "602470172",
+        "REMESA": "KBQ62910",
+        "EMPRESA": "CAMELO ARENAS GUILLERMO ANDRES",
+        "VALOR_FLETE": 280000,
+        "error": "Campos requeridos vacíos: FECHA",
+        "PDF_PATH": "/uploads/1/02-05-2025/global TM0534 ID 4368969.pdf"
+    }
+]

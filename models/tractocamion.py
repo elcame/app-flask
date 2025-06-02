@@ -5,7 +5,7 @@ class Tractocamion(db.Model):
     ID_TRACTO = db.Column(db.Integer, primary_key=True)
     MARCA = db.Column(db.String(50), nullable=False)
     MODELO = db.Column(db.String(50), nullable=False)
-    PLACA = db.Column(db.String(50), nullable=False)
+    PLACA = db.Column(db.String(50), nullable=False, unique=True)
     ID_EMPRESA = db.Column(db.Integer, db.ForeignKey('Empresa.ID_EMPRESA'), nullable=False)
 
     empresa = db.relationship('Empresa', backref=db.backref('tractocamiones', lazy=True))

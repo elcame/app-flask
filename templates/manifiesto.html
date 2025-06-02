@@ -384,9 +384,10 @@
                                                 <th>Empresa</th>
                                                 <th>Valor Flete</th>
                                                 <th>Acciones</th>
+                                                <th>Error</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody id="datosNoProcesadosList">
                                             <!-- Los datos se cargarán dinámicamente -->
                                         </tbody>
                                     </table>
@@ -565,7 +566,7 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
     function cargarManifiestos() {
-        fetch('/manifiestos')
+        fetch('/obtenermanifiestos')
             .then(response => response.json())
             .then(data => {
                 const tbody = document.querySelector('#manifiestosTable tbody');
@@ -602,10 +603,161 @@
                 
                 // Actualizar totales
                 actualizarTotales(data);
+                
+                // Actualizar filtros
+                actualizarFiltros(data);
             })
             .catch(error => {
                 console.error('Error:', error);
                 mostrarMensaje('Error al cargar los manifiestos', 'error');
+            });
+    }
+
+    // Función para actualizar los totales
+    function actualizarTotales(manifiestos) {
+        // Actualizar total de manifiestos
+        const totalManifiestos = document.getElementById('totalManifiestos');
+        if (totalManifiestos) {
+            totalManifiestos.textContent = manifiestos.length;
+        }
+
+        // Actualizar total de vehículos únicos
+        const totalVehiculos = document.getElementById('totalVehiculos');
+        if (totalVehiculos) {
+            const vehiculosUnicos = new Set(manifiestos.map(m => m.placa).filter(Boolean));
+            totalVehiculos.textContent = vehiculosUnicos.size;
+        }
+
+        // Actualizar total valor flete
+        const totalValorFlete = document.getElementById('totalValorFlete');
+        if (totalValorFlete) {
+            const total = manifiestos.reduce((sum, m) => sum + (parseFloat(m.valor_flete) || 0), 0);
+            totalValorFlete.innerHTML = `<strong>$${formatearNumero(total)}</strong>`;
+        }
+    }
+
+    // Función para formatear números con separadores de miles
+    function formatearNumero(numero) {
+        return new Intl.NumberFormat('es-CO').format(numero);
+    }
+
+    // Función para ver el PDF
+    function verPDF(pdfPath) {
+        if (!pdfPath) {
+            mostrarMensaje('No hay PDF disponible para este registro', 'warning');
+            return;
+        }
+        
+        // Asegurarse de que la ruta comience con 'uploads'
+        if (pdfPath.startsWith('/uploads/')) {
+            pdfPath = pdfPath.substring(1); // Eliminar el slash inicial
+        }
+        
+        // Construir la URL completa para ver el PDF
+        const url = `/ver_pdf/${encodeURIComponent(pdfPath)}`;
+        console.log('Intentando abrir PDF en:', url);
+        
+        // Abrir el PDF en una nueva pestaña
+        window.open(url, '_blank');
+    }
+
+    // Función para actualizar los filtros
+    function actualizarFiltros(manifiestos) {
+        const conductorSelect = document.getElementById('filterConductor');
+        const placaSelect = document.getElementById('filterPlaca');
+        const mesSelect = document.getElementById('filterMes');
+        
+        if (!conductorSelect || !placaSelect || !mesSelect) return;
+
+        // Obtener valores únicos
+        const conductores = [...new Set(manifiestos.map(m => m.conductor).filter(Boolean))];
+        const placas = [...new Set(manifiestos.map(m => m.placa).filter(Boolean))];
+        const meses = [...new Set(manifiestos.map(m => m.mes).filter(Boolean))];
+
+        // Limpiar y agregar opción "Todos"
+        conductorSelect.innerHTML = '<option value="">Todos</option>';
+        placaSelect.innerHTML = '<option value="">Todas</option>';
+        mesSelect.innerHTML = '<option value="">Todos</option>';
+
+        // Agregar opciones de conductores
+        conductores.sort().forEach(conductor => {
+            const option = document.createElement('option');
+            option.value = conductor;
+            option.textContent = conductor;
+            conductorSelect.appendChild(option);
+        });
+
+        // Agregar opciones de placas
+        placas.sort().forEach(placa => {
+            const option = document.createElement('option');
+            option.value = placa;
+            option.textContent = placa;
+            placaSelect.appendChild(option);
+        });
+
+        // Agregar opciones de meses
+        meses.sort().forEach(mes => {
+            const option = document.createElement('option');
+            option.value = mes;
+            option.textContent = mes;
+            mesSelect.appendChild(option);
+        });
+    }
+
+    // Función para aplicar los filtros
+    function aplicarFiltros() {
+        const conductor = document.getElementById('filterConductor').value;
+        const placa = document.getElementById('filterPlaca').value;
+        const mes = document.getElementById('filterMes').value;
+
+        fetch('/obtenermanifiestos')
+            .then(response => response.json())
+            .then(data => {
+                const filtrados = data.filter(m => {
+                    return (conductor === '' || m.conductor === conductor) &&
+                           (placa === '' || m.placa === placa) &&
+                           (mes === '' || m.mes === mes);
+                });
+                
+                // Actualizar la tabla con los datos filtrados
+                const tbody = document.querySelector('#manifiestosTable tbody');
+                tbody.innerHTML = '';
+                
+                filtrados.forEach(manifiesto => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${manifiesto.id}</td>
+                        <td>${manifiesto.placa}</td>
+                        <td>${manifiesto.conductor}</td>
+                        <td>${manifiesto.origen}</td>
+                        <td>${manifiesto.destino}</td>
+                        <td>${manifiesto.fecha}</td>
+                        <td>${manifiesto.mes}</td>
+                        <td>${manifiesto.kof}</td>
+                        <td>${manifiesto.remesa}</td>
+                        <td>${manifiesto.empresa}</td>
+                        <td>${manifiesto.valor_flete}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary me-1" onclick="editarManifiesto('${manifiesto.id}')">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button class="btn btn-sm btn-danger me-1" onclick="eliminarManifiesto('${manifiesto.id}')">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                            <button class="btn btn-sm btn-info" onclick="verPDF('${manifiesto.pdf_path || ''}')">
+                                <i class="fas fa-file-pdf"></i> Ver PDF
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                // Actualizar totales con los datos filtrados
+                actualizarTotales(filtrados);
+            })
+            .catch(error => {
+                console.error('Error al filtrar manifiestos:', error);
+                mostrarMensaje('Error al filtrar los manifiestos', 'error');
             });
     }
     </script>

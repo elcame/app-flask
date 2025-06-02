@@ -15,6 +15,7 @@ class Manifiesto(db.Model):
     remesa = db.Column(db.String(20))
     empresa = db.Column(db.String(100))
     valor_flete = db.Column(db.Float)
+    pdf_path = db.Column(db.String(255))
 
     def __repr__(self):
         return f'<Manifiesto {self.id}>'
@@ -54,7 +55,8 @@ class Manifiesto(db.Model):
                 'kof': str(self.kof1) if self.kof1 is not None else '',
                 'remesa': str(self.remesa) if self.remesa is not None else '',
                 'empresa': str(self.empresa) if self.empresa is not None else '',
-                'valor_flete': float(self.valor_flete) if self.valor_flete is not None else 0.0
+                'valor_flete': float(self.valor_flete) if self.valor_flete is not None else 0.0,
+                'pdf_path': str(self.pdf_path) if self.pdf_path is not None else ''
             }
             
             # Verificar que el diccionario no está vacío
@@ -66,7 +68,7 @@ class Manifiesto(db.Model):
                 raise ValueError(f"El resultado no es un diccionario, es {type(dict_data)}")
             
             # Verificar que tenemos todos los campos necesarios
-            campos_requeridos = ['id', 'placa', 'conductor', 'origen', 'destino', 'fecha', 'mes', 'kof', 'remesa', 'empresa', 'valor_flete']
+            campos_requeridos = ['id', 'placa', 'conductor', 'origen', 'destino', 'fecha', 'mes', 'kof', 'remesa', 'empresa', 'valor_flete', 'pdf_path']
             campos_faltantes = [campo for campo in campos_requeridos if campo not in dict_data]
             if campos_faltantes:
                 raise ValueError(f"Faltan campos en el diccionario: {campos_faltantes}")

@@ -11,9 +11,7 @@ import os
 
 def import_data():
     # Configurar la conexión a PostgreSQL
-    database_url = os.environ.get('DATABASE_URL')
-    if database_url and database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    database_url = "postgresql://acr_db_user:8QBqTTLlIDOD4ROq1vLWxfRCDzBtvOPB@dpg-d0nld0qli9vc73a1ng9g-a.oregon-postgres.render.com/acr_db"
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     
     with app.app_context():
