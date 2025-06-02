@@ -1,7 +1,7 @@
 from flask import Flask, redirect, url_for, session, flash, get_flashed_messages , render_template, jsonify
 from extensions import db
 from flask_login import LoginManager, login_required
-from datetime import datetime
+from datetime import datetime, UTC
 import os
 # from dotenv import load_dotenv
 import json
@@ -19,8 +19,8 @@ if os.environ.get('RENDER'):
     if database_url and database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    # En Render, usamos una carpeta temporal para los uploads
-    app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
+    # En Render, usamos una carpeta persistente para los uploads
+    app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
     # Configuración para PythonAnywhere
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
@@ -31,12 +31,14 @@ else:
     app.config['UPLOAD_FOLDER'] = 'uploads'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = 'default-secret-key'
+app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24).hex())
 
 # Crear carpetas necesarias
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], '1'), exist_ok=True)
 os.makedirs('excel', exist_ok=True)
+os.makedirs('excel/manifiestos', exist_ok=True)
+os.makedirs('excel/reportes', exist_ok=True)
 
 # Configuración de Flask-Login
 login_manager = LoginManager()
@@ -85,18 +87,18 @@ with app.app_context():
     # Configurar el user_loader para Flask-Login
     @login_manager.user_loader
     def load_user(user_id):
-        return Usuario.query.get(int(user_id))
+        return db.session.get(Usuario, int(user_id))
 
 @app.route('/')
 def home():
     if 'user_id' not in session:
         return redirect(url_for('usuario_bp.login_form'))
-    return redirect(url_for('manifiesto_bp.index'))
+    return redirect(url_for('usuario_bp.manifiestos'))
 
 @app.context_processor
-def utility_processor():
+def inject_now():
     return {
-        'now': datetime.utcnow(),
+        'now': datetime.now(UTC),
         'get_flashed_messages': get_flashed_messages
     }
 
