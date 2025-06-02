@@ -127,8 +127,19 @@ def ver_pdf(filename):
             filename = f'uploads/{filename}'
             
         # Construir la ruta completa al archivo
-        ruta_completa = os.path.join(os.path.dirname(os.path.dirname(__file__)), filename)
+        if os.environ.get('RENDER'):
+            ruta_completa = os.path.join('/opt/render/project/src', filename)
+        else:
+            ruta_completa = os.path.join(os.path.dirname(os.path.dirname(__file__)), filename)
+            
         print(f"Intentando abrir PDF en: {ruta_completa}")
+        
+        # Verificar si el directorio existe
+        directorio = os.path.dirname(ruta_completa)
+        if not os.path.exists(directorio):
+            print(f"El directorio no existe: {directorio}")
+            os.makedirs(directorio, exist_ok=True)
+            print(f"Directorio creado: {directorio}")
         
         if not os.path.exists(ruta_completa):
             print(f"Archivo no encontrado: {ruta_completa}")
@@ -367,8 +378,10 @@ def obtener_carpetas_uploads():
         carpetas = []
         # Primero, buscar en la carpeta de la empresa 1
         empresa_folder = os.path.join(UPLOAD_FOLDER, '1')
+        print(f"Verificando carpeta de empresa: {empresa_folder}")  # Debug log
+        
         if os.path.exists(empresa_folder):
-            print(f"Procesando carpeta de empresa: {empresa_folder}")  # Debug log
+            print(f"Contenido de la carpeta empresa: {os.listdir(empresa_folder)}")  # Debug log
             # Listar las subcarpetas dentro de la carpeta de la empresa
             for subcarpeta in os.listdir(empresa_folder):
                 ruta_subcarpeta = os.path.join(empresa_folder, subcarpeta)
@@ -387,8 +400,31 @@ def obtener_carpetas_uploads():
                         'date': fecha
                     })
                     print(f"Subcarpeta encontrada: {subcarpeta} con {pdf_count} PDFs")  # Debug log
+        else:
+            print(f"La carpeta de empresa {empresa_folder} no existe")  # Debug log
+            # Intentar crear la carpeta de empresa si no existe
+            os.makedirs(empresa_folder, exist_ok=True)
+            print(f"Carpeta de empresa creada: {empresa_folder}")  # Debug log
+
+        # También listar las carpetas directamente en UPLOAD_FOLDER
+        print(f"Listando carpetas en UPLOAD_FOLDER: {UPLOAD_FOLDER}")  # Debug log
+        for carpeta in os.listdir(UPLOAD_FOLDER):
+            ruta_carpeta = os.path.join(UPLOAD_FOLDER, carpeta)
+            if os.path.isdir(ruta_carpeta) and carpeta != '1':  # Excluir la carpeta de empresa 1
+                print(f"Procesando carpeta principal: {ruta_carpeta}")  # Debug log
+                pdf_count = len([f for f in os.listdir(ruta_carpeta) if f.lower().endswith('.pdf')])
+                fecha_mod = os.path.getmtime(ruta_carpeta)
+                fecha = datetime.fromtimestamp(fecha_mod).strftime('%Y-%m-%d %H:%M:%S')
+                
+                carpetas.append({
+                    'nombre': carpeta,
+                    'pdf_count': pdf_count,
+                    'date': fecha
+                })
+                print(f"Carpeta principal encontrada: {carpeta} con {pdf_count} PDFs")  # Debug log
         
-        print(f"Total de subcarpetas encontradas: {len(carpetas)}")  # Debug log
+        print(f"Total de carpetas encontradas: {len(carpetas)}")  # Debug log
+        print(f"Carpetas encontradas: {[c['nombre'] for c in carpetas]}")  # Debug log
         return jsonify(carpetas), 200
     except Exception as e:
         print(f"Error al obtener carpetas: {str(e)}")  # Debug log

@@ -22,6 +22,12 @@ if os.environ.get('RENDER'):
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     # En Render, usamos una carpeta persistente para los uploads
     app.config['UPLOAD_FOLDER'] = '/opt/render/project/src/uploads'
+    # Asegurarse de que la carpeta de uploads existe
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    # Crear subcarpeta para la empresa 1
+    empresa_folder = os.path.join(app.config['UPLOAD_FOLDER'], '1')
+    os.makedirs(empresa_folder, exist_ok=True)
+    print(f"Carpetas creadas en Render: {app.config['UPLOAD_FOLDER']} y {empresa_folder}")
 elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
     # Configuración para PythonAnywhere
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
