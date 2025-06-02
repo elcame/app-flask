@@ -13,7 +13,11 @@ import shutil
 procesar_pdfs_bp = Blueprint('procesar_pdfs_bp', __name__)
 
 # Directorio base para almacenar archivos
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+if os.environ.get('RENDER'):
+    UPLOAD_FOLDER = '/opt/render/project/src/uploads'
+else:
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -361,32 +365,26 @@ def obtener_carpetas_uploads():
             return jsonify([]), 200
 
         carpetas = []
-        # Primero obtener las carpetas principales
-        for carpeta_principal in os.listdir(UPLOAD_FOLDER):
-            ruta_principal = os.path.join(UPLOAD_FOLDER, carpeta_principal)
-            print(f"Procesando carpeta principal: {ruta_principal}")  # Debug log
+        # Listar directamente las carpetas en UPLOAD_FOLDER
+        for carpeta in os.listdir(UPLOAD_FOLDER):
+            ruta_carpeta = os.path.join(UPLOAD_FOLDER, carpeta)
+            print(f"Procesando carpeta: {ruta_carpeta}")  # Debug log
             
-            if os.path.isdir(ruta_principal):
-                # Buscar subcarpetas dentro de la carpeta principal
-                for subcarpeta in os.listdir(ruta_principal):
-                    ruta_subcarpeta = os.path.join(ruta_principal, subcarpeta)
-                    print(f"Procesando subcarpeta: {ruta_subcarpeta}")  # Debug log
-                    
-                    if os.path.isdir(ruta_subcarpeta):
-                        # Contar archivos PDF en la subcarpeta
-                        pdf_count = len([f for f in os.listdir(ruta_subcarpeta) if f.lower().endswith('.pdf')])
-                        # Obtener fecha de modificación
-                        fecha_mod = os.path.getmtime(ruta_subcarpeta)
-                        fecha = datetime.fromtimestamp(fecha_mod).strftime('%Y-%m-%d %H:%M:%S')
-                        
-                        carpetas.append({
-                            'nombre': f"{carpeta_principal}/{subcarpeta}",
-                            'pdf_count': pdf_count,
-                            'date': fecha
-                        })
-                        print(f"Subcarpeta encontrada: {subcarpeta} con {pdf_count} PDFs")  # Debug log
+            if os.path.isdir(ruta_carpeta):
+                # Contar archivos PDF en la carpeta
+                pdf_count = len([f for f in os.listdir(ruta_carpeta) if f.lower().endswith('.pdf')])
+                # Obtener fecha de modificación
+                fecha_mod = os.path.getmtime(ruta_carpeta)
+                fecha = datetime.fromtimestamp(fecha_mod).strftime('%Y-%m-%d %H:%M:%S')
+                
+                carpetas.append({
+                    'nombre': carpeta,
+                    'pdf_count': pdf_count,
+                    'date': fecha
+                })
+                print(f"Carpeta encontrada: {carpeta} con {pdf_count} PDFs")  # Debug log
         
-        print(f"Total de subcarpetas encontradas: {len(carpetas)}")  # Debug log
+        print(f"Total de carpetas encontradas: {len(carpetas)}")  # Debug log
         return jsonify(carpetas), 200
     except Exception as e:
         print(f"Error al obtener carpetas: {str(e)}")  # Debug log

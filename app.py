@@ -21,7 +21,7 @@ if os.environ.get('RENDER'):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     # En Render, usamos una carpeta persistente para los uploads
-    app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
+    app.config['UPLOAD_FOLDER'] = '/opt/render/project/src/uploads'
 elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
     # Configuración para PythonAnywhere
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
@@ -35,11 +35,20 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24).hex())
 
 # Crear carpetas necesarias
+print(f"Creando carpetas en: {app.config['UPLOAD_FOLDER']}")  # Debug log
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], '1'), exist_ok=True)
+print(f"Carpeta uploads creada en: {app.config['UPLOAD_FOLDER']}")  # Debug log
+
+# Crear subcarpeta para la empresa 1
+empresa_folder = os.path.join(app.config['UPLOAD_FOLDER'], '1')
+os.makedirs(empresa_folder, exist_ok=True)
+print(f"Subcarpeta empresa creada en: {empresa_folder}")  # Debug log
+
+# Crear carpetas para Excel
 os.makedirs('excel', exist_ok=True)
 os.makedirs('excel/manifiestos', exist_ok=True)
 os.makedirs('excel/reportes', exist_ok=True)
+print("Carpetas de Excel creadas")  # Debug log
 
 # Configuración de Flask-Login
 login_manager = LoginManager()
