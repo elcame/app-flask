@@ -3,9 +3,9 @@ services:
     name: app-flask-acr
     env: python
     buildCommand: |
-      apt-get update && apt-get install -y build-essential gcc python3-dev
-      pip install --upgrade pip
-      pip install numpy==1.21.6
+      apt-get update && apt-get install -y build-essential gcc python3-dev libopenblas-dev
+      pip install --upgrade pip setuptools wheel
+      pip install --no-cache-dir numpy==1.21.6
       pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
