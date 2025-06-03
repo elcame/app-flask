@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Nuevo Manifiesto</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="tractocamion_id" class="form-label">Tractocamión</label>
+                            <select class="form-select" id="tractocamion_id" name="tractocamion_id" required>
+                                <option value="">Seleccione un tractocamión</option>
+                                {% for tractocamion in tractocamiones %}
+                                <option value="{{ tractocamion.id }}">{{ tractocamion.placa }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="trabajador_id" class="form-label">Trabajador</label>
+                            <select class="form-select" id="trabajador_id" name="trabajador_id" required>
+                                <option value="">Seleccione un trabajador</option>
+                                {% for trabajador in trabajadores %}
+                                <option value="{{ trabajador.id }}">{{ trabajador.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="fecha" class="form-label">Fecha</label>
+                            <input type="date" class="form-control" id="fecha" name="fecha" required>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('manifiestos_bp.listar_manifiestos') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Establecer la fecha actual como valor predeterminado
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha').value = today;
+});
+</script>
+{% endblock %} 

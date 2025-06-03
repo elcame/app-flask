@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Manifiestos</h2>
+        <a href="{{ url_for('manifiestos_bp.nuevo_manifiesto') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nuevo Manifiesto
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Tractocamión</th>
+                    <th>Trabajador</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for manifiesto in manifiestos %}
+                <tr>
+                    <td>{{ manifiesto.id }}</td>
+                    <td>{{ manifiesto.fecha.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ manifiesto.tractocamion.placa }}</td>
+                    <td>{{ manifiesto.trabajador.nombre }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('manifiestos_bp.ver_manifiesto', id=manifiesto.id) }}" 
+                               class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{{ url_for('manifiestos_bp.editar_manifiesto', id=manifiesto.id) }}" 
+                               class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" 
+                                    class="btn btn-sm btn-danger"
+                                    onclick="confirmarEliminar({{ manifiesto.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center">No hay manifiestos registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="confirmarEliminarModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                ¿Está seguro que desea eliminar este manifiesto?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formEliminar" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmarEliminar(id) {
+    const modal = new bootstrap.Modal(document.getElementById('confirmarEliminarModal'));
+    const form = document.getElementById('formEliminar');
+    form.action = `/manifiestos/${id}/eliminar`;
+    modal.show();
+}
+</script>
+{% endblock %} 

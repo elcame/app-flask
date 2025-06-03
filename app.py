@@ -1,14 +1,24 @@
-from flask import Flask, redirect, url_for, session, flash, get_flashed_messages , render_template, jsonify
+from flask import Flask, redirect, url_for, session, flash, get_flashed_messages , render_template, jsonify, send_file
 from extensions import db
-from flask_login import LoginManager, login_required
+from flask_login import LoginManager, login_required, UserMixin, login_user, logout_user, current_user
 from datetime import datetime, UTC
 import os
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 import json
 from flask_migrate import Migrate
+import logging
+
+# Configuración de logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Cargar variables de entorno
-# load_dotenv()
+load_dotenv()
+
+# Verificar variables de entorno
+logger.info("Verificando variables de entorno:")
+logger.info(f"GITHUB_REPO_URL: {os.environ.get('GITHUB_REPO_URL')}")
+logger.info(f"GITHUB_TOKEN: {'Configurado' if os.environ.get('GITHUB_TOKEN') else 'No configurado'}")
 
 # Crear la aplicación Flask
 app = Flask(__name__)
@@ -21,10 +31,26 @@ if os.environ.get('RENDER'):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     
-    # En Render, usamos el almacenamiento persistente
+    # En Render, usamos GitHub Storage para persistencia
     app.config['UPLOAD_FOLDER'] = '/opt/render/project/src/uploads'
-    # Crear el directorio persistente si no existe
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    
+    # Verificar si existe el directorio persistente
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        logger.info(f"Creando directorio persistente: {app.config['UPLOAD_FOLDER']}")
+        try:
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            # Crear un archivo de prueba para verificar permisos
+            test_file = os.path.join(app.config['UPLOAD_FOLDER'], 'test.txt')
+            with open(test_file, 'w') as f:
+                f.write('test')
+            os.remove(test_file)
+            logger.info("Directorio persistente creado y verificado correctamente")
+        except Exception as e:
+            logger.error(f"Error al crear directorio persistente: {str(e)}")
+            # Intentar usar un directorio alternativo
+            app.config['UPLOAD_FOLDER'] = '/opt/render/project/src/tmp_uploads'
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            logger.info(f"Usando directorio alternativo: {app.config['UPLOAD_FOLDER']}")
     
     # Crear subcarpeta para la empresa 1
     empresa_folder = os.path.join(app.config['UPLOAD_FOLDER'], '1')
@@ -35,10 +61,10 @@ if os.environ.get('RENDER'):
     carpeta_fecha = os.path.join(empresa_folder, fecha_actual)
     os.makedirs(carpeta_fecha, exist_ok=True)
     
-    print(f"Configuración de carpetas en Render:")
-    print(f"- Carpeta base: {app.config['UPLOAD_FOLDER']}")
-    print(f"- Carpeta empresa: {empresa_folder}")
-    print(f"- Carpeta fecha actual: {carpeta_fecha}")
+    logger.info(f"Configuración de carpetas en Render:")
+    logger.info(f"- Carpeta base: {app.config['UPLOAD_FOLDER']}")
+    logger.info(f"- Carpeta empresa: {empresa_folder}")
+    logger.info(f"- Carpeta fecha actual: {carpeta_fecha}")
     
     # Verificar permisos de las carpetas
     try:
@@ -46,9 +72,9 @@ if os.environ.get('RENDER'):
         with open(test_file, 'w') as f:
             f.write('test')
         os.remove(test_file)
-        print("Permisos de escritura verificados correctamente")
+        logger.info("Permisos de escritura verificados correctamente")
     except Exception as e:
-        print(f"Error al verificar permisos: {str(e)}")
+        logger.error(f"Error al verificar permisos: {str(e)}")
 elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
     # Configuración para PythonAnywhere
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'
@@ -62,20 +88,20 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24).hex())
 
 # Crear carpetas necesarias
-print(f"Creando carpetas en: {app.config['UPLOAD_FOLDER']}")  # Debug log
+logger.info(f"Creando carpetas en: {app.config['UPLOAD_FOLDER']}")
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-print(f"Carpeta uploads creada en: {app.config['UPLOAD_FOLDER']}")  # Debug log
+logger.info(f"Carpeta uploads creada en: {app.config['UPLOAD_FOLDER']}")
 
 # Crear subcarpeta para la empresa 1
 empresa_folder = os.path.join(app.config['UPLOAD_FOLDER'], '1')
 os.makedirs(empresa_folder, exist_ok=True)
-print(f"Subcarpeta empresa creada en: {empresa_folder}")  # Debug log
+logger.info(f"Subcarpeta empresa creada en: {empresa_folder}")
 
 # Crear carpetas para Excel
 os.makedirs('excel', exist_ok=True)
 os.makedirs('excel/manifiestos', exist_ok=True)
 os.makedirs('excel/reportes', exist_ok=True)
-print("Carpetas de Excel creadas")  # Debug log
+logger.info("Carpetas de Excel creadas")
 
 # Configuración de Flask-Login
 login_manager = LoginManager()
@@ -87,6 +113,58 @@ login_manager.login_message_category = 'info'
 # Inicialización de extensiones
 db.init_app(app)
 migrate = Migrate(app, db)
+
+# Intentar inicializar GitHub Storage
+try:
+    from extensions.github_storage import github_storage
+    if github_storage is None or not github_storage.initialized:
+        logger.warning("GitHub Storage no está disponible. Se usará almacenamiento local.")
+        # Configurar almacenamiento local
+        app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        logger.info(f"Configurado almacenamiento local en: {app.config['UPLOAD_FOLDER']}")
+    else:
+        logger.info("GitHub Storage inicializado correctamente")
+        # Crear estructura de carpetas en GitHub
+        try:
+            # Crear estructura de carpetas local primero
+            local_upload_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+            os.makedirs(local_upload_folder, exist_ok=True)
+            empresa_folder = os.path.join(local_upload_folder, '1')
+            os.makedirs(empresa_folder, exist_ok=True)
+            
+            # Intentar crear estructura en GitHub
+            if github_storage.save_file(file=None, path='uploads/1/.gitkeep'):
+                logger.info("Estructura de carpetas creada en GitHub")
+            else:
+                logger.warning("No se pudo crear la estructura en GitHub. Usando solo almacenamiento local.")
+        except Exception as e:
+            logger.error(f"Error al crear estructura en GitHub: {str(e)}")
+            # Fallback a almacenamiento local
+            app.config['UPLOAD_FOLDER'] = local_upload_folder
+            logger.info(f"Fallback a almacenamiento local en: {app.config['UPLOAD_FOLDER']}")
+except Exception as e:
+    logger.error(f"Error al inicializar GitHub Storage: {str(e)}")
+    github_storage = None
+    # Configurar almacenamiento local
+    app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    logger.info(f"Configurado almacenamiento local en: {app.config['UPLOAD_FOLDER']}")
+
+# Asegurar que las carpetas necesarias existan
+try:
+    # Crear carpeta base de uploads si no existe
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    
+    # Crear subcarpeta para la empresa 1
+    empresa_folder = os.path.join(app.config['UPLOAD_FOLDER'], '1')
+    os.makedirs(empresa_folder, exist_ok=True)
+    
+    logger.info(f"Estructura de carpetas local configurada:")
+    logger.info(f"- Carpeta base: {app.config['UPLOAD_FOLDER']}")
+    logger.info(f"- Carpeta empresa: {empresa_folder}")
+except Exception as e:
+    logger.error(f"Error al crear estructura de carpetas local: {str(e)}")
 
 # Registro de blueprints
 with app.app_context():
@@ -109,6 +187,9 @@ with app.app_context():
     from routes.tanqueo_routes import tanqueo_bp
     from routes.mantenimiento_routes import mantenimiento_bp
     from routes.seguro_routes import seguro_bp
+    from routes.auth_routes import auth_bp
+    from routes.manifiestos_routes import manifiestos_bp
+    from routes.exportar_routes import exportar_bp
 
     # Registrar blueprints
     app.register_blueprint(usuario_bp)
@@ -116,11 +197,14 @@ with app.app_context():
     app.register_blueprint(tractocamion_bp)
     app.register_blueprint(trabajadores_bp)
     app.register_blueprint(manifiesto_bp)
-    app.register_blueprint(procesar_pdfs_bp)
+    app.register_blueprint(procesar_pdfs_bp, url_prefix='/procesar_pdfs')
     app.register_blueprint(pagos_bp)
     app.register_blueprint(tanqueo_bp)
     app.register_blueprint(mantenimiento_bp)
     app.register_blueprint(seguro_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(manifiestos_bp)
+    app.register_blueprint(exportar_bp)
 
     # Configurar el user_loader para Flask-Login
     @login_manager.user_loader

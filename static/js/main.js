@@ -268,7 +268,7 @@ function procesarCarpeta(carpeta) {
 
 // Función para actualizar la lista de carpetas
 function actualizarListaCarpetas() {
-    fetch('/carpetas_uploads')
+    fetch('/procesar_pdfs/listar_carpetas')
         .then(response => response.json())
         .then(data => {
             const carpetasList = document.getElementById('carpetasList');
@@ -285,77 +285,120 @@ function actualizarListaCarpetas() {
             if (data && data.length > 0) {
                 data.forEach(carpeta => {
                     // Sumar al total de PDFs
-                    totalPDFsCount += carpeta.pdf_count;
+                    totalPDFsCount += carpeta.pdfs;
 
                     // Agregar a la tabla
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${carpeta.nombre}</td>
-                        <td>${carpeta.pdf_count}</td>
-                        <td>${new Date(carpeta.date).toLocaleString()}</td>
+                        <td>${carpeta.pdfs}</td>
+                        <td>${carpeta.fecha}</td>
                         <td>
-                            <button class="btn btn-sm btn-primary me-1" onclick="procesarCarpeta('${carpeta.nombre}')">
-                                <i class="fas fa-cogs"></i> Procesar
-                            </button>
-                            <button class="btn btn-sm btn-danger me-1" onclick="eliminarCarpeta('${carpeta.nombre}')">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </button>
-                            <button class="btn btn-sm btn-success" onclick="abrirExcel('${carpeta.nombre}')">
-                                <i class="fas fa-file-excel"></i> Abrir Excel
-                            </button>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-primary me-1" onclick="procesarCarpeta('${carpeta.nombre}')">
+                                    <i class="fas fa-cogs"></i> Procesar
+                                </button>
+                                <button class="btn btn-sm btn-success me-1" onclick="descargarCarpeta('${carpeta.nombre}')">
+                                    <i class="fas fa-download"></i> Descargar
+                                </button>
+                                <button class="btn btn-sm btn-info me-1" onclick="abrirExcel('${carpeta.nombre}')">
+                                    <i class="fas fa-file-excel"></i> Excel
+                                </button>
+                                <button class="btn btn-sm btn-danger me-1" onclick="eliminarCarpeta('${carpeta.nombre}')">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </div>
                         </td>
                     `;
                     carpetasList.appendChild(row);
-
+                    
                     // Agregar al select
                     const option = document.createElement('option');
                     option.value = carpeta.nombre;
                     option.textContent = carpeta.nombre;
                     carpetaSelect.appendChild(option);
                 });
-
-                // Actualizar el contador total de PDFs
-                if (totalPDFs) {
-                    totalPDFs.textContent = totalPDFsCount;
-                }
             } else {
-                const row = document.createElement('tr');
-                row.innerHTML = '<td colspan="4" class="text-center">No se encontraron carpetas</td>';
-                carpetasList.appendChild(row);
-                
-                // Actualizar el contador total de PDFs a 0
-                if (totalPDFs) {
-                    totalPDFs.textContent = '0';
-                }
+                carpetasList.innerHTML = '<tr><td colspan="4" class="text-center">No hay carpetas disponibles</td></tr>';
+            }
+            
+            if (totalPDFs) {
+                totalPDFs.textContent = totalPDFsCount;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            mostrarMensaje('Error al cargar las carpetas', 'error');
+            const carpetasList = document.getElementById('carpetasList');
+            if (carpetasList) {
+                carpetasList.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al cargar las carpetas</td></tr>';
+            }
         });
+}
+
+// Función para descargar una carpeta
+function descargarCarpeta(carpeta) {
+    // Mostrar mensaje de carga
+    mostrarMensaje('Descargando carpeta...', 'info');
+    
+    // Crear un enlace temporal para la descarga
+    const link = document.createElement('a');
+    link.href = `/procesar_pdfs/descargar_carpeta/${carpeta}`;
+    link.download = `${carpeta}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Mostrar mensaje de éxito después de un breve retraso
+    setTimeout(() => {
+        mostrarMensaje('Carpeta descargada correctamente', 'success');
+    }, 1000);
 }
 
 // Función para eliminar una carpeta
 function eliminarCarpeta(carpeta) {
-    if (!confirm('¿Está seguro de que desea eliminar esta carpeta?')) {
+    if (!confirm('¿Está seguro de que desea eliminar esta carpeta? Esta acción no se puede deshacer.')) {
         return;
     }
 
-    fetch(`/eliminar_carpeta/${carpeta}`, {
-        method: 'DELETE'
+    // Mostrar mensaje de carga
+    mostrarMensaje('Eliminando carpeta...', 'info');
+
+    // Primero intentar cerrar cualquier archivo que pueda estar abierto
+    fetch(`/procesar_pdfs/cerrar_archivos/${encodeURIComponent(carpeta)}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
-    .then(response => response.json())
+    .then(() => {
+        // Después de cerrar los archivos, intentar eliminar la carpeta
+        return fetch(`/procesar_pdfs/eliminar_carpeta/${encodeURIComponent(carpeta)}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Error al eliminar la carpeta');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.message) {
             mostrarMensaje(data.message, 'success');
-            actualizarListaCarpetas();
+            // Actualizar la lista de carpetas después de un breve retraso
+            setTimeout(() => {
+                actualizarListaCarpetas();
+            }, 1000);
         } else {
-            mostrarMensaje(data.error || 'Error al eliminar la carpeta', 'error');
+            throw new Error(data.error || 'Error al eliminar la carpeta');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        mostrarMensaje('Error al eliminar la carpeta', 'error');
+        mostrarMensaje('Error al eliminar la carpeta: ' + error.message + '. Por favor, asegúrese de que ningún archivo esté abierto.', 'error');
     });
 }
 
@@ -576,7 +619,7 @@ function actualizarContadores(manifiestos) {
 
 // Función para mostrar datos procesados
 function mostrarDatosProcesados() {
-    fetch('/datos_procesados')
+    fetch('/procesar_pdfs/datos_procesados')
         .then(response => response.json())
         .then(data => {
             const tablaContainer = document.querySelector('#tablaDatosProcesados tbody');
