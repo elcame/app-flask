@@ -28,6 +28,12 @@ if os.environ.get('RENDER'):
     empresa_folder = os.path.join(app.config['UPLOAD_FOLDER'], '1')
     os.makedirs(empresa_folder, exist_ok=True)
     print(f"Carpetas creadas en Render: {app.config['UPLOAD_FOLDER']} y {empresa_folder}")
+    
+    # Crear carpeta para la fecha actual si no existe
+    fecha_actual = datetime.now().strftime('%d-%m-%Y')
+    carpeta_fecha = os.path.join(empresa_folder, fecha_actual)
+    os.makedirs(carpeta_fecha, exist_ok=True)
+    print(f"Carpeta de fecha creada: {carpeta_fecha}")
 elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
     # Configuración para PythonAnywhere
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'

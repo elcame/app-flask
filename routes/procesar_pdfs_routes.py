@@ -164,9 +164,20 @@ def procesar_pdfs():
             return jsonify({'error': 'Faltan parámetros'}), 400
         
         print(f"Procesando PDFs en la carpeta: {carpeta}")
-        ruta_completa = os.path.join(UPLOAD_FOLDER, carpeta)
+        
+        # Construir la ruta completa según el entorno
+        if os.environ.get('RENDER'):
+            ruta_completa = os.path.join('/opt/render/project/src/uploads/1', carpeta)
+        else:
+            ruta_completa = os.path.join(UPLOAD_FOLDER, '1', carpeta)
+            
+        print(f"Ruta completa de la carpeta: {ruta_completa}")
         
         if not os.path.exists(ruta_completa):
+            print(f"La carpeta no existe: {ruta_completa}")
+            # Intentar crear la carpeta si no existe
+            os.makedirs(ruta_completa, exist_ok=True)
+            print(f"Carpeta creada: {ruta_completa}")
             return jsonify({'error': 'La carpeta no existe'}), 404
         
         # Obtener lista de archivos PDF
