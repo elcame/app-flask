@@ -1,8 +1,12 @@
 services:
   - type: web
-    name: app-flask
+    name: app-flask-acr
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      apt-get update && apt-get install -y build-essential gcc python3-dev
+      pip install --upgrade pip
+      pip install numpy==1.21.6
+      pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
