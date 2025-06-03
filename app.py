@@ -20,20 +20,35 @@ if os.environ.get('RENDER'):
     if database_url and database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    # En Render, usamos una carpeta persistente para los uploads
+    
+    # En Render, usamos el almacenamiento persistente
     app.config['UPLOAD_FOLDER'] = '/opt/render/project/src/uploads'
-    # Asegurarse de que la carpeta de uploads existe
+    # Crear el directorio persistente si no existe
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    
     # Crear subcarpeta para la empresa 1
     empresa_folder = os.path.join(app.config['UPLOAD_FOLDER'], '1')
     os.makedirs(empresa_folder, exist_ok=True)
-    print(f"Carpetas creadas en Render: {app.config['UPLOAD_FOLDER']} y {empresa_folder}")
     
-    # Crear carpeta para la fecha actual si no existe
+    # Crear carpeta para la fecha actual
     fecha_actual = datetime.now().strftime('%d-%m-%Y')
     carpeta_fecha = os.path.join(empresa_folder, fecha_actual)
     os.makedirs(carpeta_fecha, exist_ok=True)
-    print(f"Carpeta de fecha creada: {carpeta_fecha}")
+    
+    print(f"Configuración de carpetas en Render:")
+    print(f"- Carpeta base: {app.config['UPLOAD_FOLDER']}")
+    print(f"- Carpeta empresa: {empresa_folder}")
+    print(f"- Carpeta fecha actual: {carpeta_fecha}")
+    
+    # Verificar permisos de las carpetas
+    try:
+        test_file = os.path.join(carpeta_fecha, 'test.txt')
+        with open(test_file, 'w') as f:
+            f.write('test')
+        os.remove(test_file)
+        print("Permisos de escritura verificados correctamente")
+    except Exception as e:
+        print(f"Error al verificar permisos: {str(e)}")
 elif os.environ.get('PYTHONANYWHERE_DOMAIN'):
     # Configuración para PythonAnywhere
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://GMDSOLUTIONS:abelardocamelo@GMDSOLUTIONS.mysql.pythonanywhere-services.com/GMDSOLUTIONS$ACR'

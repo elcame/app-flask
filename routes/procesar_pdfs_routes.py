@@ -383,22 +383,46 @@ def obtener_carpetas_uploads():
         
         if not os.path.exists(UPLOAD_FOLDER):
             print(f"La carpeta {UPLOAD_FOLDER} no existe, creándola...")  # Debug log
-            os.makedirs(UPLOAD_FOLDER)
-            return jsonify([]), 200
+            try:
+                os.makedirs(UPLOAD_FOLDER)
+                print(f"Carpeta base creada: {UPLOAD_FOLDER}")
+            except Exception as e:
+                print(f"Error al crear carpeta base: {str(e)}")
+                return jsonify({'error': 'No se pudo crear la carpeta base'}), 500
 
         carpetas = []
         # Primero, buscar en la carpeta de la empresa 1
         empresa_folder = os.path.join(UPLOAD_FOLDER, '1')
         print(f"Verificando carpeta de empresa: {empresa_folder}")  # Debug log
         
-        if os.path.exists(empresa_folder):
-            print(f"Contenido de la carpeta empresa: {os.listdir(empresa_folder)}")  # Debug log
-            # Listar las subcarpetas dentro de la carpeta de la empresa
-            for subcarpeta in os.listdir(empresa_folder):
-                ruta_subcarpeta = os.path.join(empresa_folder, subcarpeta)
-                print(f"Procesando subcarpeta: {ruta_subcarpeta}")  # Debug log
-                
-                if os.path.isdir(ruta_subcarpeta):
+        if not os.path.exists(empresa_folder):
+            print(f"La carpeta de empresa {empresa_folder} no existe, creándola...")  # Debug log
+            try:
+                os.makedirs(empresa_folder)
+                print(f"Carpeta de empresa creada: {empresa_folder}")
+            except Exception as e:
+                print(f"Error al crear carpeta de empresa: {str(e)}")
+                return jsonify({'error': 'No se pudo crear la carpeta de empresa'}), 500
+        
+        # Verificar permisos de escritura
+        try:
+            test_file = os.path.join(empresa_folder, 'test.txt')
+            with open(test_file, 'w') as f:
+                f.write('test')
+            os.remove(test_file)
+            print("Permisos de escritura verificados correctamente")
+        except Exception as e:
+            print(f"Error al verificar permisos: {str(e)}")
+            return jsonify({'error': 'No hay permisos de escritura en la carpeta'}), 500
+        
+        print(f"Contenido de la carpeta empresa: {os.listdir(empresa_folder)}")  # Debug log
+        # Listar las subcarpetas dentro de la carpeta de la empresa
+        for subcarpeta in os.listdir(empresa_folder):
+            ruta_subcarpeta = os.path.join(empresa_folder, subcarpeta)
+            print(f"Procesando subcarpeta: {ruta_subcarpeta}")  # Debug log
+            
+            if os.path.isdir(ruta_subcarpeta):
+                try:
                     # Contar archivos PDF en la subcarpeta
                     pdf_count = len([f for f in os.listdir(ruta_subcarpeta) if f.lower().endswith('.pdf')])
                     # Obtener fecha de modificación
@@ -411,28 +435,9 @@ def obtener_carpetas_uploads():
                         'date': fecha
                     })
                     print(f"Subcarpeta encontrada: {subcarpeta} con {pdf_count} PDFs")  # Debug log
-        else:
-            print(f"La carpeta de empresa {empresa_folder} no existe")  # Debug log
-            # Intentar crear la carpeta de empresa si no existe
-            os.makedirs(empresa_folder, exist_ok=True)
-            print(f"Carpeta de empresa creada: {empresa_folder}")  # Debug log
-
-        # También listar las carpetas directamente en UPLOAD_FOLDER
-        print(f"Listando carpetas en UPLOAD_FOLDER: {UPLOAD_FOLDER}")  # Debug log
-        for carpeta in os.listdir(UPLOAD_FOLDER):
-            ruta_carpeta = os.path.join(UPLOAD_FOLDER, carpeta)
-            if os.path.isdir(ruta_carpeta) and carpeta != '1':  # Excluir la carpeta de empresa 1
-                print(f"Procesando carpeta principal: {ruta_carpeta}")  # Debug log
-                pdf_count = len([f for f in os.listdir(ruta_carpeta) if f.lower().endswith('.pdf')])
-                fecha_mod = os.path.getmtime(ruta_carpeta)
-                fecha = datetime.fromtimestamp(fecha_mod).strftime('%Y-%m-%d %H:%M:%S')
-                
-                carpetas.append({
-                    'nombre': carpeta,
-                    'pdf_count': pdf_count,
-                    'date': fecha
-                })
-                print(f"Carpeta principal encontrada: {carpeta} con {pdf_count} PDFs")  # Debug log
+                except Exception as e:
+                    print(f"Error al procesar subcarpeta {subcarpeta}: {str(e)}")
+                    continue
         
         print(f"Total de carpetas encontradas: {len(carpetas)}")  # Debug log
         print(f"Carpetas encontradas: {[c['nombre'] for c in carpetas]}")  # Debug log
