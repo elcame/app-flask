@@ -3,14 +3,19 @@ services:
     name: app-flask-acr
     env: python
     buildCommand: |
-      apt-get update && apt-get install -y build-essential gcc python3-dev libopenblas-dev
-      pip install --upgrade pip setuptools wheel
-      pip install --no-cache-dir numpy==1.21.6
-      pip install -r requirements.txt
+      apt-get update && apt-get install -y \
+        build-essential \
+        python3-dev \
+        libpq-dev \
+        unixodbc-dev \
+        && pip install --upgrade pip \
+        && pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0
+        value: 3.11.0
+      - key: PYTHONUNBUFFERED
+        value: 1
       - key: DATABASE_URL
         sync: false
       - key: SECRET_KEY
