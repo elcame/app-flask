@@ -352,16 +352,27 @@ def ver_pdf(filename):
         print(f"Error al ver PDF: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@procesar_pdfs_bp.route('/procesar-pdfs')
+@procesar_pdfs_bp.route('/procesar_pdfs', methods=['GET'])
 @login_required
 def procesar_pdfs():
     try:
-        # Obtener la lista de carpetas desde GitHub
-        folders = github_storage.list_files('uploads')
-        return render_template('procesar_pdfs.html', folders=folders)
+        carpeta = request.args.get('carpeta')
+        if not carpeta:
+            return jsonify({'error': 'No se especificó una carpeta'}), 400
+            
+        # Construir la ruta completa de la carpeta
+        carpeta_path = os.path.join(UPLOAD_FOLDER, '1', carpeta)
+        
+        if not os.path.exists(carpeta_path):
+            return jsonify({'error': 'La carpeta no existe'}), 404
+            
+        # Procesar los PDFs
+        procesar_pdfs_en_carpeta_para_post(carpeta_path)
+        
+        return jsonify({'mensaje': 'PDFs procesados correctamente'}), 200
     except Exception as e:
-        logger.error(f"Error al listar carpetas: {str(e)}")
-        return render_template('procesar_pdfs.html', folders=[])
+        logger.error(f"Error al procesar PDFs: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @procesar_pdfs_bp.route('/obtener-carpetas-uploads')
 @login_required
@@ -499,16 +510,24 @@ def serve_uploads(filename):
 @procesar_pdfs_bp.route('/datos_no_procesados')
 def obtener_datos_no_procesados():
     try:
-        archivo_json = os.path.join('datos_no_procesados', 'datos_no_procesados.json')
+        # Asegurarse que la carpeta existe
+        carpeta = 'datos_no_procesados'
+        if not os.path.exists(carpeta):
+            os.makedirs(carpeta)
+            
+        archivo_json = os.path.join(carpeta, 'datos_no_procesados.json')
+        
+        # Si el archivo no existe, crear uno vacío
         if not os.path.exists(archivo_json):
-            return jsonify([])
+            with open(archivo_json, 'w', encoding='utf-8') as f:
+                json.dump([], f)
             
         with open(archivo_json, 'r', encoding='utf-8') as f:
             datos = json.load(f)
             
         return jsonify(datos)
     except Exception as e:
-        print(f"Error al obtener datos no procesados: {str(e)}")
+        logger.error(f"Error al obtener datos no procesados: {str(e)}")
         return jsonify([])
 
 @procesar_pdfs_bp.route('/datos_no_procesados/<id>', methods=['GET'])
