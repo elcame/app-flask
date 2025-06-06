@@ -53,16 +53,22 @@ def guardar_dato_no_procesado(dato, error=None):
             print(f"Agregando nuevo dato con ID: {dato.get('ID')}")
             datos.append(dato)
         
+        with open('datos_no_procesados.json', 'w', encoding='utf-8') as f:
+            json.dump(datos, f, ensure_ascii=False, indent=4)
         # Guardar datos actualizados
         try:
             with open(archivo_json, 'w', encoding='utf-8') as f:
                 json.dump(datos, f, ensure_ascii=False, indent=4)
             print(f"Dato guardado exitosamente: {dato.get('ID')} - Error: {error}")
             return True
+        
+        # Guardar datos en datos_no_procesados.json
         except Exception as e:
             print(f"Error al escribir en el archivo JSON: {str(e)}")
             raise
-            
+      
+    
+      
     except Exception as e:
         print(f"Error al guardar dato no procesado: {str(e)}")
         return False 

@@ -193,77 +193,18 @@ function handleProcesarCarpeta() {
 
 // Función para procesar una carpeta específica
 function procesarCarpeta(carpeta) {
-    console.log('Procesando carpeta:', carpeta);
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-    const progressBarInner = progressBar.querySelector('.progress-bar');
-    
-    // Mostrar la barra de progreso
-    progressBar.style.display = 'block';
-    progressBarInner.style.width = '0%';
-    progressBarInner.classList.remove('bg-success', 'bg-danger');
-    progressBarInner.classList.add('progress-bar-striped', 'progress-bar-animated');
-    progressText.textContent = 'Iniciando procesamiento...';
-    
-    // Crear EventSource para recibir actualizaciones en tiempo real
-    const eventSource = new EventSource(`/procesar_pdfs?carpeta=${encodeURIComponent(carpeta)}`);
-    
-    eventSource.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        console.log('Recibida actualización:', data);
-        
-        if (data.error) {
-            console.error('Error:', data.error);
-            progressText.textContent = `Error: ${data.error}`;
-            progressBarInner.classList.remove('progress-bar-striped', 'progress-bar-animated');
-            progressBarInner.classList.add('bg-danger');
-            eventSource.close();
-            setTimeout(() => {
-                progressBar.style.display = 'none';
-                progressBarInner.classList.remove('bg-danger');
-                progressBarInner.classList.add('progress-bar-striped', 'progress-bar-animated');
-            }, 5000);
-            return;
-        }
-        
-        // Solo actualizar la barra de progreso cuando se esté generando el Excel y creando manifiestos
-        if (data.mensaje && data.mensaje.includes('Generando Excel y creando manifiestos')) {
-            progressBarInner.style.width = `${data.progreso}%`;
-            progressBarInner.setAttribute('aria-valuenow', data.progreso);
-            progressText.textContent = data.mensaje;
-        }
-        
-        if (data.completado) {
-            progressBarInner.style.width = '100%';
-            progressBarInner.setAttribute('aria-valuenow', 100);
-            progressText.textContent = 'Proceso completado';
-            progressBarInner.classList.remove('progress-bar-striped', 'progress-bar-animated');
-            progressBarInner.classList.add('bg-success');
-            eventSource.close();
-            setTimeout(() => {
-                progressBar.style.display = 'none';
-                progressBarInner.classList.remove('bg-success');
-                progressBarInner.classList.add('progress-bar-striped', 'progress-bar-animated');
-                // Actualizar todas las tablas
-                mostrarDatosProcesados();
-                mostrarDatosNoProcesados();
-                cargarManifiestos();
-            }, 2000);
-        }
-    };
-    
-    eventSource.onerror = function(error) {
-        console.error('Error en EventSource:', error);
-        progressText.textContent = 'Error en la conexión';
-        progressBarInner.classList.remove('progress-bar-striped', 'progress-bar-animated');
-        progressBarInner.classList.add('bg-danger');
-        eventSource.close();
-        setTimeout(() => {
-            progressBar.style.display = 'none';
-            progressBarInner.classList.remove('bg-danger');
-            progressBarInner.classList.add('progress-bar-striped', 'progress-bar-animated');
-        }, 5000);
-    };
+    fetch(`/procesar_pdfs/procesar_pdfs?carpeta=${encodeURIComponent(carpeta)}`)
+        .then(response => response.json())
+        .then(data => {
+            mostrarMensaje(data.mensaje || 'Carpeta procesada correctamente', 'success');
+            actualizarListaCarpetas();
+            mostrarDatosProcesados();
+            mostrarDatosNoProcesados();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarMensaje('Error al procesar la carpeta', 'error');
+        });
 }
 
 // Función para actualizar la lista de carpetas
@@ -271,135 +212,70 @@ function actualizarListaCarpetas() {
     fetch('/procesar_pdfs/listar_carpetas')
         .then(response => response.json())
         .then(data => {
-            const carpetasList = document.getElementById('carpetasList');
-            const carpetaSelect = document.getElementById('carpetaSelect');
-            const totalPDFs = document.getElementById('totalPDFs');
+            const tbody = document.getElementById('carpetasList');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
             
-            if (!carpetasList || !carpetaSelect) return;
-
-            carpetasList.innerHTML = '';
-            carpetaSelect.innerHTML = '<option value="">Seleccione una carpeta</option>';
-
-            let totalPDFsCount = 0;
-
-            if (data && data.length > 0) {
-                data.forEach(carpeta => {
-                    // Sumar al total de PDFs
-                    totalPDFsCount += carpeta.pdfs;
-
-                    // Agregar a la tabla
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${carpeta.nombre}</td>
-                        <td>${carpeta.pdfs}</td>
-                        <td>${carpeta.fecha}</td>
-                        <td>
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-primary me-1" onclick="procesarCarpeta('${carpeta.nombre}')">
-                                    <i class="fas fa-cogs"></i> Procesar
-                                </button>
-                                <button class="btn btn-sm btn-success me-1" onclick="descargarCarpeta('${carpeta.nombre}')">
-                                    <i class="fas fa-download"></i> Descargar
-                                </button>
-                                <button class="btn btn-sm btn-info me-1" onclick="abrirExcel('${carpeta.nombre}')">
-                                    <i class="fas fa-file-excel"></i> Excel
-                                </button>
-                                <button class="btn btn-sm btn-danger me-1" onclick="eliminarCarpeta('${carpeta.nombre}')">
-                                    <i class="fas fa-trash"></i> Eliminar
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    carpetasList.appendChild(row);
-                    
-                    // Agregar al select
-                    const option = document.createElement('option');
-                    option.value = carpeta.nombre;
-                    option.textContent = carpeta.nombre;
-                    carpetaSelect.appendChild(option);
-                });
-            } else {
-                carpetasList.innerHTML = '<tr><td colspan="4" class="text-center">No hay carpetas disponibles</td></tr>';
+            if (data.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="4" class="text-center">No hay carpetas disponibles</td>';
+                tbody.appendChild(row);
+                return;
             }
-            
-            if (totalPDFs) {
-                totalPDFs.textContent = totalPDFsCount;
-            }
+
+            data.forEach(carpeta => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${carpeta.nombre}</td>
+                    <td>${carpeta.pdfs}</td>
+                    <td>${carpeta.fecha}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary me-1" onclick="procesarCarpeta('${carpeta.nombre}')">
+                            <i class="fas fa-cogs"></i> Procesar
+                        </button>
+                        <button class="btn btn-sm btn-success me-1" onclick="descargarCarpeta('${carpeta.nombre}')">
+                            <i class="fas fa-download"></i> Descargar
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="eliminarCarpeta('${carpeta.nombre}')">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Actualizar el contador de PDFs
+            const totalPDFs = data.reduce((sum, carpeta) => sum + carpeta.pdfs, 0);
+            document.getElementById('totalPDFs').textContent = totalPDFs;
         })
         .catch(error => {
             console.error('Error:', error);
-            const carpetasList = document.getElementById('carpetasList');
-            if (carpetasList) {
-                carpetasList.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al cargar las carpetas</td></tr>';
-            }
+            mostrarMensaje('Error al cargar la lista de carpetas', 'error');
         });
 }
 
 // Función para descargar una carpeta
 function descargarCarpeta(carpeta) {
-    // Mostrar mensaje de carga
-    mostrarMensaje('Descargando carpeta...', 'info');
-    
-    // Crear un enlace temporal para la descarga
-    const link = document.createElement('a');
-    link.href = `/procesar_pdfs/descargar_carpeta/${carpeta}`;
-    link.download = `${carpeta}.zip`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Mostrar mensaje de éxito después de un breve retraso
-    setTimeout(() => {
-        mostrarMensaje('Carpeta descargada correctamente', 'success');
-    }, 1000);
+    window.location.href = `/procesar_pdfs/descargar_carpeta/${encodeURIComponent(carpeta)}`;
 }
 
 // Función para eliminar una carpeta
 function eliminarCarpeta(carpeta) {
-    if (!confirm('¿Está seguro de que desea eliminar esta carpeta? Esta acción no se puede deshacer.')) {
-        return;
-    }
-
-    // Mostrar mensaje de carga
-    mostrarMensaje('Eliminando carpeta...', 'info');
-
-    // Primero intentar cerrar cualquier archivo que pueda estar abierto
-    fetch(`/procesar_pdfs/cerrar_archivos/${encodeURIComponent(carpeta)}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(() => {
-        // Después de cerrar los archivos, intentar eliminar la carpeta
-        return fetch(`/procesar_pdfs/eliminar_carpeta/${encodeURIComponent(carpeta)}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+    if (confirm('¿Está seguro de que desea eliminar esta carpeta?')) {
+        fetch(`/procesar_pdfs/eliminar_carpeta/${encodeURIComponent(carpeta)}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            mostrarMensaje(data.mensaje || 'Carpeta eliminada correctamente', 'success');
+            actualizarListaCarpetas();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarMensaje('Error al eliminar la carpeta', 'error');
         });
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Error al eliminar la carpeta');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.message) {
-            mostrarMensaje(data.message, 'success');
-            // Actualizar la lista de carpetas después de un breve retraso
-            setTimeout(() => {
-                actualizarListaCarpetas();
-            }, 1000);
-        } else {
-            throw new Error(data.error || 'Error al eliminar la carpeta');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        mostrarMensaje('Error al eliminar la carpeta: ' + error.message + '. Por favor, asegúrese de que ningún archivo esté abierto.', 'error');
-    });
+    }
 }
 
 // Función para mostrar mensajes
@@ -669,19 +545,37 @@ function mostrarDatosProcesados() {
 
 // Función para ver el PDF
 function verPDF(pdfPath) {
+    console.log('Intentando abrir PDF en:', pdfPath);
     if (!pdfPath) {
-        console.warn('No se proporcionó una ruta de PDF');
+        console.error('No se proporcionó una ruta de PDF');
         return;
     }
-    
-    console.log('Intentando abrir PDF:', pdfPath);
-    
-    // Construir la URL completa para ver el PDF
-    const url = `/ver_pdf/${encodeURIComponent(pdfPath)}`;
-    console.log('URL construida:', url);
-    
-    // Abrir el PDF en una nueva pestaña
-    window.open(url, '_blank');
+
+    // Asegurarse que la ruta comienza con uploads/
+    if (!pdfPath.startsWith('uploads/')) {
+        console.error('Ruta de PDF inválida:', pdfPath);
+        return;
+    }
+
+    // Codificar cada parte de la ruta por separado
+    const encodedPath = pdfPath.split('/').map(part => encodeURIComponent(part)).join('/');
+    console.log('Ruta codificada:', encodedPath);
+
+    // Construir la URL completa con el prefijo /procesar_pdfs
+    const url = `/procesar_pdfs/ver_pdf/${encodedPath}`;
+    console.log('URL completa:', url);
+
+    // Intentar abrir el PDF en una nueva pestaña
+    try {
+        const newWindow = window.open(url, '_blank');
+        if (!newWindow) {
+            console.error('No se pudo abrir la ventana. Verifica si el bloqueador de ventanas emergentes está activado.');
+            alert('No se pudo abrir el PDF. Por favor, verifica si el bloqueador de ventanas emergentes está activado.');
+        }
+    } catch (error) {
+        console.error('Error al abrir el PDF:', error);
+        alert('Error al abrir el PDF. Por favor, intenta nuevamente.');
+    }
 }
 
 // Función para abrir el Excel
@@ -753,51 +647,68 @@ function eliminarTodosManifiestos() {
 
 // Función para mostrar datos no procesados
 function mostrarDatosNoProcesados() {
-    fetch('/datos_no_procesados')
-        .then(response => response.json())
+    fetch('/procesar_pdfs/datos_no_procesados')
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || 'Error al cargar los datos no procesados');
+                });
+            }
+            return response.json();
+        })
         .then(data => {
-            const tablaContainer = document.getElementById('datosNoProcesadosList');
-            if (!tablaContainer) return;
+            const tbody = document.getElementById('datosNoProcesadosList');
+            if (!tbody) {
+                console.error('No se encontró el elemento tbody para datos no procesados');
+                return;
+            }
 
-            tablaContainer.innerHTML = '';
+            tbody.innerHTML = '';
 
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = '<td colspan="13" class="text-center">No hay datos no procesados disponibles.</td>';
-                tablaContainer.appendChild(row);
+                row.innerHTML = '<td colspan="14" class="text-center">No hay datos no procesados disponibles.</td>';
+                tbody.appendChild(row);
                 return;
             }
 
             data.forEach(dato => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${dato.ID || ''}</td>
-                    <td>${dato.PLACA || ''}</td>
-                    <td>${dato.CONDUCTOR || ''}</td>
-                    <td>${dato.ORIGEN || ''}</td>
-                    <td>${dato.DESTINO || ''}</td>
-                    <td>${dato.FECHA || ''}</td>
-                    <td>${dato.MES || ''}</td>
-                    <td>${dato.KOF || ''}</td>
-                    <td>${dato.REMESA || ''}</td>
-                    <td>${dato.EMPRESA || ''}</td>
-                    <td>${dato.VALOR_FLETE || ''}</td>
+                    <td>${dato.ID || dato.id || ''}</td>
+                    <td>${dato.PLACA || dato.placa || ''}</td>
+                    <td>${dato.CONDUCTOR || dato.conductor || ''}</td>
+                    <td>${dato.ORIGEN || dato.origen || ''}</td>
+                    <td>${dato.DESTINO || dato.destino || ''}</td>
+                    <td>${dato.FECHA || dato.fecha || ''}</td>
+                    <td>${dato.MES || dato.mes || ''}</td>
+                    <td>${dato.KOF || dato.kof || ''}</td>
+                    <td>${dato.REMESA || dato.remesa || ''}</td>
+                    <td>${dato.EMPRESA || dato.empresa || ''}</td>
+                    <td>${dato.VALOR_FLETE || dato.valor_flete || ''}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary me-1" onclick="editarDatoNoProcesado('${dato.ID}')">
+                        <button class="btn btn-sm btn-primary me-1" onclick="editarDatoNoProcesado('${dato.ID || dato.id}')">
                             <i class="fas fa-edit"></i> Editar
                         </button>
-                        <button class="btn btn-sm btn-info" onclick="verPDF('${dato.PDF_PATH || ''}')">
+                        <button class="btn btn-sm btn-success me-1" onclick="crearManifiestoDesdeNoProcesado('${dato.ID || dato.id}')">
+                            <i class="fas fa-plus"></i> Crear Manifiesto
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="verPDF('uploads/1/${dato.pdf_path}.pdf')">
                             <i class="fas fa-file-pdf"></i> Ver PDF
                         </button>
                     </td>
-                    <td>${dato.error || ''}</td>
+                    <td class="text-danger">${dato.error || ''}</td>
                 `;
-                tablaContainer.appendChild(row);
+                tbody.appendChild(row);
             });
         })
         .catch(error => {
             console.error('Error:', error);
-            mostrarMensaje('Error al cargar los datos no procesados', 'error');
+            mostrarMensaje('Error al cargar los datos no procesados: ' + error.message, 'error');
+            const tbody = document.getElementById('datosNoProcesadosList');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="14" class="text-center text-danger">Error al cargar los datos no procesados</td></tr>';
+            }
         });
 }
 
@@ -1103,7 +1014,7 @@ function editarDatoProcesado(id) {
 // Función para editar un dato no procesado
 function editarDatoNoProcesado(id) {
     console.log('Editando dato no procesado con ID:', id); // Debug
-    fetch(`/datos_no_procesados/${id}`)
+    fetch(`/procesar_pdfs/datos_no_procesados/${id}`)
         .then(response => {
             console.log('Respuesta del servidor:', response); // Debug
             if (!response.ok) {
@@ -1196,128 +1107,58 @@ function editarDatoNoProcesado(id) {
 // Función para guardar cambios en datos procesados
 async function guardarCambiosDatosProcesados(event) {
     event.preventDefault();
-    const form = document.getElementById('editDatosProcesadosForm');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
-    const id = data.datosProcesadosId;
+    
+    const id = document.getElementById('editId').value;
+    const data = {
+        placa: document.getElementById('editPlaca').value,
+        conductor: document.getElementById('editConductor').value,
+        origen: document.getElementById('editOrigen').value,
+        destino: document.getElementById('editDestino').value,
+        fecha: document.getElementById('editFecha').value,
+        mes: document.getElementById('editMes').value,
+        kof: document.getElementById('editKof').value,
+        remesa: document.getElementById('editRemesa').value,
+        empresa: document.getElementById('editEmpresa').value,
+        valor_flete: document.getElementById('editValorFlete').value
+    };
+
+    // Validar campos requeridos
+    const camposRequeridos = ['placa', 'conductor', 'origen', 'destino', 'fecha'];
+    const camposVacios = camposRequeridos.filter(campo => !data[campo]);
+    
+    if (camposVacios.length > 0) {
+        mostrarMensaje(`Campos requeridos vacíos: ${camposVacios.join(', ').toUpperCase()}`, 'error');
+        return;
+    }
+
+    // Validar formato de fecha
+    const fechaRegex = /^\d{2}-\d{2}-\d{4}$/;
+    if (!fechaRegex.test(data.fecha)) {
+        mostrarMensaje('Formato de fecha inválido. Use DD-MM-YYYY', 'error');
+        return;
+    }
 
     try {
-        // Mostrar barra de progreso
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-        progressBar.style.display = 'block';
-        progressText.textContent = 'Guardando cambios...';
-
-        // Preparar los datos para enviar
-        const datosActualizados = {
-            'ID': id,
-            'PLACA': data.placaProcesados.toUpperCase(),
-            'CONDUCTOR': data.conductorProcesados.toUpperCase(),
-            'ORIGEN': data.origenProcesados.toUpperCase(),
-            'DESTINO': data.destinoProcesados.toUpperCase(),
-            'FECHA': data.fechaProcesados,
-            'MES': data.mesProcesados.toUpperCase(),
-            'KOF': data.kofProcesados.toUpperCase(),
-            'REMESA': data.remesaProcesados.toUpperCase(),
-            'EMPRESA': data.empresaProcesados.toUpperCase(),
-            'VALOR_FLETE': data.valor_fleteProcesados
-        };
-
-        console.log('Enviando datos actualizados:', datosActualizados);
-
-        // Actualizar datos procesados
-        const response = await fetch(`/datos_procesados/${id}`, {
+        const response = await fetch(`/procesar_pdfs/datos_no_procesados/${id}`, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(datosActualizados)
+            body: JSON.stringify(data)
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Error al guardar los cambios');
+        const result = await response.json();
+
+        if (response.ok) {
+            mostrarMensaje('Datos actualizados correctamente', 'success');
+            document.getElementById('modalEditarDatosProcesados').style.display = 'none';
+            mostrarDatosNoProcesados();
+        } else {
+            mostrarMensaje(result.error || 'Error al actualizar los datos', 'error');
         }
-
-        // Obtener el manifiesto correspondiente
-        const manifiestoResponse = await fetch(`/manifiestos/${id}`);
-        if (!manifiestoResponse.ok) {
-            throw new Error('Error al obtener el manifiesto');
-        }
-        const manifiesto = await manifiestoResponse.json();
-
-        // Actualizar el manifiesto con los nuevos datos
-        const manifiestoData = {
-            'ID': id,
-            'PLACA': data.placaProcesados.toUpperCase(),
-            'CONDUCTOR': data.conductorProcesados.toUpperCase(),
-            'ORIGEN': data.origenProcesados.toUpperCase(),
-            'DESTINO': data.destinoProcesados.toUpperCase(),
-            'FECHA': data.fechaProcesados,
-            'MES': data.mesProcesados.toUpperCase(),
-            'KOF': data.kofProcesados.toUpperCase(),
-            'REMESA': data.remesaProcesados.toUpperCase(),
-            'EMPRESA': data.empresaProcesados.toUpperCase(),
-            'VALOR_FLETE': data.valor_fleteProcesados
-        };
-
-        const updateManifiestoResponse = await fetch(`/manifiestos/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(manifiestoData)
-        });
-
-        if (!updateManifiestoResponse.ok) {
-            throw new Error('Error al actualizar el manifiesto');
-        }
-
-        // Actualizar la fila específica en la tabla de datos procesados
-        const tablaContainer = document.querySelector('#tablaDatosProcesados tbody');
-        if (tablaContainer) {
-            const fila = tablaContainer.querySelector(`tr[data-id="${id}"]`);
-            if (fila) {
-                fila.innerHTML = `
-                    <td>${id}</td>
-                    <td>${data.placaProcesados}</td>
-                    <td>${data.conductorProcesados}</td>
-                    <td>${data.origenProcesados}</td>
-                    <td>${data.destinoProcesados}</td>
-                    <td>${data.fechaProcesados}</td>
-                    <td>${data.mesProcesados}</td>
-                    <td>${data.kofProcesados}</td>
-                    <td>${data.remesaProcesados}</td>
-                    <td>${data.empresaProcesados}</td>
-                    <td>${data.valor_fleteProcesados}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary me-1" onclick="editarDatoProcesado('${id}')">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="btn btn-sm btn-info" onclick="verPDF('${manifiesto.pdf_path || ''}')">
-                            <i class="fas fa-file-pdf"></i> Ver PDF
-                        </button>
-                    </td>
-                `;
-            }
-        }
-
-        // Actualizar la tabla de manifiestos
-        await cargarManifiestos();
-
-        // Ocultar barra de progreso
-        progressBar.style.display = 'none';
-        progressText.textContent = '';
-
-        // Cerrar el modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('editDatosProcesadosModal'));
-        modal.hide();
-
-        // Mostrar mensaje de éxito
-        mostrarMensaje('Cambios guardados exitosamente', 'success');
     } catch (error) {
         console.error('Error:', error);
-        mostrarMensaje('Error al guardar los cambios: ' + error.message, 'error');
+        mostrarMensaje('Error al actualizar los datos', 'error');
     }
 }
 
@@ -1336,101 +1177,136 @@ function crearManifiestoDesdeNoProcesado(id) {
     progressBarInner.classList.add('progress-bar-striped', 'progress-bar-animated');
     progressText.textContent = 'Obteniendo datos...';
 
-    // Obtener los datos del formulario
-    const form = document.getElementById('editDatosProcesadosForm');
-    if (!form) {
-        mostrarMensaje('Error: No se encontró el formulario', 'error');
-        return;
-    }
+    // Primero obtener los datos del registro no procesado para obtener el pdf_path
+    fetch(`/procesar_pdfs/datos_no_procesados/${id}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al obtener los datos del registro');
+            }
+            return response.json();
+        })
+        .then(datoNoProcesado => {
+            console.log('Datos del registro no procesado:', datoNoProcesado);
 
-    // Obtener los valores del formulario
-    const placa = form.placaProcesados.value;
-    const conductor = form.conductorProcesados.value;
-    const origen = form.origenProcesados.value;
-    const destino = form.destinoProcesados.value;
-    const fecha = form.fechaProcesados.value;
-    const mes = form.mesProcesados.value;
-    const kof = form.kofProcesados.value;
-    const remesa = form.remesaProcesados.value;
-    const empresa = form.empresaProcesados.value;
-    const valor_flete = form.valor_fleteProcesados.value;
+            // Obtener los datos del formulario
+            const form = document.getElementById('editDatosProcesadosForm');
+            if (!form) {
+                throw new Error('No se encontró el formulario');
+            }
 
-    // Validar que todos los campos requeridos estén presentes
-    if (!placa || !conductor || !origen || !destino || !fecha || !mes || !kof || !remesa || !empresa || !valor_flete) {
-        mostrarMensaje('Error: Todos los campos son requeridos', 'error');
-        return;
-    }
+            // Obtener los valores del formulario
+            const placa = form.placaProcesados.value;
+            const conductor = form.conductorProcesados.value;
+            const origen = form.origenProcesados.value;
+            const destino = form.destinoProcesados.value;
+            const fecha = form.fechaProcesados.value;
+            const mes = form.mesProcesados.value;
+            const kof = form.kofProcesados.value;
+            const remesa = form.remesaProcesados.value;
+            const empresa = form.empresaProcesados.value;
+            const valor_flete = form.valor_fleteProcesados.value;
+            
+            // Validar que todos los campos requeridos estén presentes
+            if (!placa || !conductor || !origen || !destino || !fecha || !mes || !kof || !remesa || !empresa || !valor_flete) {
+                throw new Error('Todos los campos son requeridos');
+            }
 
-    // Crear el objeto con los datos del formulario en el formato que espera el backend
-    const formData = {
-        'ID': id,
-        'NUMERO': '1', // Valor por defecto
-        'PLACA': placa.toUpperCase(),
-        'CONDUCTOR': conductor.toUpperCase(),
-        'ORIGEN': origen.toUpperCase(),
-        'DESTINO': destino.toUpperCase(),
-        'FECHA': fecha,
-        'MES': mes.toUpperCase(),
-        'KOF': kof.toUpperCase(),
-        'REMESA': remesa.toUpperCase(),
-        'EMPRESA': empresa.toUpperCase(),
-        'VALOR_FLETE': valor_flete
-    };
+            // Verificar que tenemos el pdf_path del dato no procesado
+            if (!datoNoProcesado.PDF_PATH) {
+                throw new Error('No se encontró la ruta del PDF en los datos no procesados');
+            }
 
-    console.log('Enviando datos al servidor:', formData); // Debug
+            console.log('PDF_PATH del dato no procesado:', datoNoProcesado.PDF_PATH);
 
-    // Realizar la petición POST
-    fetch('/manifiestos', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => {
-        console.log('Respuesta del servidor:', response); // Debug
-        if (!response.ok) {
-            return response.json().then(err => {
-                throw new Error(err.error || 'Error al crear el manifiesto');
+            // Crear el objeto con los datos del formulario en el formato que espera el backend
+            const formData = {
+                'ID': id,
+                'NUMERO': '1', // Valor por defecto
+                'PLACA': placa.toUpperCase(),
+                'CONDUCTOR': conductor.toUpperCase(),
+                'ORIGEN': origen.toUpperCase(),
+                'DESTINO': destino.toUpperCase(),
+                'FECHA': fecha,
+                'MES': mes.toUpperCase(),
+                'KOF': kof.toUpperCase(),
+                'REMESA': remesa.toUpperCase(),
+                'EMPRESA': empresa.toUpperCase(),
+                'VALOR_FLETE': valor_flete,
+                'PDF_PATH': datoNoProcesado.PDF_PATH // Usar el PDF_PATH que viene del servidor sin modificarlo
+            };
+
+            console.log('Enviando datos al servidor:', formData); // Debug
+
+            // Realizar la petición POST para crear el manifiesto
+            return fetch('/manifiestos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
             });
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Manifiesto creado:', data); // Debug
-        progressBarInner.style.width = '100%';
-        progressBarInner.setAttribute('aria-valuenow', 100);
-        progressText.textContent = 'Manifiesto creado exitosamente';
-        progressBarInner.classList.remove('progress-bar-striped', 'progress-bar-animated');
-        progressBarInner.classList.add('bg-success');
-        
-        // Cerrar el modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('editDatosProcesadosModal'));
-        if (modal) {
-            modal.hide();
-        }
+        })
+        .then(response => {
+            console.log('Respuesta del servidor:', response); // Debug
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || 'Error al crear el manifiesto');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Manifiesto creado:', data); // Debug
+            progressBarInner.style.width = '100%';
+            progressBarInner.setAttribute('aria-valuenow', 100);
+            progressText.textContent = 'Manifiesto creado exitosamente';
+            progressBarInner.classList.remove('progress-bar-striped', 'progress-bar-animated');
+            progressBarInner.classList.add('bg-success');
+            
+            // Cerrar el modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editDatosProcesadosModal'));
+            if (modal) {
+                modal.hide();
+            }
 
-        // Actualizar las tablas
-        setTimeout(() => {
-            progressBar.style.display = 'none';
-            progressBarInner.classList.remove('bg-success');
-            progressBarInner.classList.add('progress-bar-striped', 'progress-bar-animated');
-            mostrarDatosNoProcesados();
-            cargarManifiestos();
-            mostrarMensaje('Manifiesto creado exitosamente', 'success');
-        }, 2000);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        progressText.textContent = `Error: ${error.message}`;
-        progressBarInner.classList.remove('progress-bar-striped', 'progress-bar-animated');
-        progressBarInner.classList.add('bg-danger');
-        mostrarMensaje('Error al crear el manifiesto: ' + error.message, 'error');
-        
-        setTimeout(() => {
-            progressBar.style.display = 'none';
-            progressBarInner.classList.remove('bg-danger');
-            progressBarInner.classList.add('progress-bar-striped', 'progress-bar-animated');
-        }, 3000);
-    });
+            // Crear mensaje con los datos del manifiesto
+            const mensaje = `
+                Manifiesto creado exitosamente:
+                ID: ${data.id}
+                Placa: ${data.placa}
+                Conductor: ${data.conductor}
+                Origen: ${data.origen}
+                Destino: ${data.destino}
+                Fecha: ${data.fecha}
+                Mes: ${data.mes}
+                KOF: ${data.kof}
+                Remesa: ${data.remesa}
+                Empresa: ${data.empresa}
+                Valor Flete: $${data.valor_flete}
+                PDF: ${data.pdf_path}
+            `;
+
+            // Actualizar las tablas
+            setTimeout(() => {
+                progressBar.style.display = 'none';
+                progressBarInner.classList.remove('bg-success');
+                progressBarInner.classList.add('progress-bar-striped', 'progress-bar-animated');
+                mostrarDatosNoProcesados();
+                cargarManifiestos();
+                mostrarMensaje(mensaje, 'success');
+            }, 2000);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            progressText.textContent = `Error: ${error.message}`;
+            progressBarInner.classList.remove('progress-bar-striped', 'progress-bar-animated');
+            progressBarInner.classList.add('bg-danger');
+            mostrarMensaje('Error al crear el manifiesto: ' + error.message, 'error');
+            
+            setTimeout(() => {
+                progressBar.style.display = 'none';
+                progressBarInner.classList.remove('bg-danger');
+                progressBarInner.classList.add('progress-bar-striped', 'progress-bar-animated');
+            }, 3000);
+        });
 }

@@ -324,32 +324,42 @@ def eliminar_carpeta(nombre):
 @procesar_pdfs_bp.route('/ver_pdf/<path:filename>')
 def ver_pdf(filename):
     try:
-        # Asegurarse de que la ruta comience con 'uploads'
-        if not filename.startswith('uploads/'):
-            filename = f'uploads/{filename}'
-            
-        # Construir la ruta completa al archivo
+        # Decodificar la URL
+        filename = filename.replace('%2F', '/')
+        logger.info(f"URL decodificada: {filename}")
+        
+        # Construir la ruta base
         if os.environ.get('RENDER'):
-            ruta_completa = os.path.join('/opt/render/project/src', filename)
+            base_path = '/opt/render/project/src'
         else:
-            ruta_completa = os.path.join(os.path.dirname(os.path.dirname(__file__)), filename)
+            # Usar la ruta absoluta del directorio raíz del proyecto
+            base_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
             
-        print(f"Intentando abrir PDF en: {ruta_completa}")
+        logger.info(f"Ruta base del proyecto: {base_path}")
         
-        # Verificar si el directorio existe
-        directorio = os.path.dirname(ruta_completa)
-        if not os.path.exists(directorio):
-            print(f"El directorio no existe: {directorio}")
-            os.makedirs(directorio, exist_ok=True)
-            print(f"Directorio creado: {directorio}")
+        # Construir la ruta completa al archivo
+        file_path = os.path.join(base_path, filename)
+        logger.info(f"Ruta completa del archivo: {file_path}")
         
-        if not os.path.exists(ruta_completa):
-            print(f"Archivo no encontrado: {ruta_completa}")
+        # Verificar si el archivo existe
+        if not os.path.exists(file_path):
+            logger.error(f"Archivo no encontrado: {file_path}")
+            # Listar el contenido del directorio para debug
+            dir_path = os.path.dirname(file_path)
+            if os.path.exists(dir_path):
+                logger.info(f"Contenido del directorio {dir_path}: {os.listdir(dir_path)}")
+            else:
+                logger.error(f"El directorio no existe: {dir_path}")
             return jsonify({'error': 'Archivo no encontrado'}), 404
             
-        return send_file(ruta_completa, mimetype='application/pdf')
+        # Enviar el archivo
+        return send_file(
+            file_path,
+            mimetype='application/pdf',
+            as_attachment=False
+        )
     except Exception as e:
-        print(f"Error al ver PDF: {str(e)}")
+        logger.error(f"Error al ver PDF: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @procesar_pdfs_bp.route('/procesar_pdfs', methods=['GET'])
@@ -528,37 +538,66 @@ def obtener_datos_no_procesados():
         return jsonify(datos)
     except Exception as e:
         logger.error(f"Error al obtener datos no procesados: {str(e)}")
-        return jsonify([])
+        return jsonify({'error': str(e)}), 500
 
 @procesar_pdfs_bp.route('/datos_no_procesados/<id>', methods=['GET'])
 def obtener_dato_no_procesado(id):
     try:
         # Ruta correcta del archivo JSON
-        archivo_json = 'datos_no_procesados/datos_no_procesados.json'
+        archivo_json = 'datos_no_procesados.json'
+        
+        logger.info(f"Buscando dato con ID: {id}")
+        logger.info(f"Ruta del archivo JSON: {archivo_json}")
         
         if not os.path.exists(archivo_json):
+            logger.error(f"Archivo no encontrado: {archivo_json}")
             return jsonify({'error': 'No se encontró el archivo de datos no procesados'}), 404
             
         with open(archivo_json, 'r', encoding='utf-8') as f:
             datos = json.load(f)
+            logger.info(f"Total de datos en el archivo: {len(datos)}")
             
         # Buscar el dato por ID
         for dato in datos:
-            if dato.get('ID') == id:
+            logger.info(f"Comparando ID: {dato.get('ID')} con {id}")
+            if str(dato.get('ID')) == str(id):
+                logger.info(f"Dato encontrado: {dato}")
                 return jsonify(dato), 200
                 
+        logger.error(f"No se encontró el dato con ID: {id}")
         return jsonify({'error': 'Dato no encontrado'}), 404
         
     except Exception as e:
-        print(f"Error al obtener dato no procesado: {str(e)}")
+        logger.error(f"Error al obtener dato no procesado: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @procesar_pdfs_bp.route('/datos_no_procesados/<id>', methods=['PUT'])
 def actualizar_dato_no_procesado(id):
     try:
         data = request.get_json()
-        with open('datos_no_procesados.json', 'r', encoding='utf-8') as archivo_json:
-            datos = json.load(archivo_json)
+        archivo_json = 'datos_no_procesados.json'
+        
+        # Validar y formatear la fecha si está presente
+        if 'fecha' in data and data['fecha']:
+            try:
+                # Intentar diferentes formatos de fecha
+                fecha = data['fecha']
+                if '/' in fecha:
+                    # Convertir de DD/MM/YYYY a DD-MM-YYYY
+                    fecha = fecha.replace('/', '-')
+                elif ',' in fecha:
+                    # Convertir de DD-MM,YYYY a DD-MM-YYYY
+                    fecha = fecha.replace(',', '-')
+                
+                # Validar el formato final
+                datetime.strptime(fecha, '%d-%m-%Y')
+                data['fecha'] = fecha
+            except ValueError as e:
+                logger.error(f"Error al formatear fecha: {str(e)}")
+                return jsonify({'error': 'Formato de fecha inválido. Use DD-MM-YYYY'}), 400
+        
+        with open(archivo_json, 'r', encoding='utf-8') as f:
+            datos = json.load(f)
         
         for dato in datos:
             if dato.get('ID') == id:
@@ -567,13 +606,13 @@ def actualizar_dato_no_procesado(id):
                     if value:  # Solo actualizar si el valor no está vacío
                         dato[key.upper()] = value
                 
-                with open('datos_no_procesados.json', 'w', encoding='utf-8') as archivo_json:
-                    json.dump(datos, archivo_json, ensure_ascii=False, indent=4)
+                with open(archivo_json, 'w', encoding='utf-8') as f:
+                    json.dump(datos, f, ensure_ascii=False, indent=4)
                 return jsonify({'message': 'Dato actualizado correctamente'}), 200
                 
         return jsonify({'error': 'Dato no encontrado'}), 404
     except Exception as e:
-        print(f"Error al actualizar dato no procesado: {e}")
+        logger.error(f"Error al actualizar dato no procesado: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @procesar_pdfs_bp.route('/datos_procesados/<id>', methods=['GET'])

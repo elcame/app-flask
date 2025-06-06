@@ -573,6 +573,12 @@
                 tbody.innerHTML = '';
                 
                 data.forEach(manifiesto => {
+                    console.log('Datos del manifiesto:', manifiesto);
+                    
+                    // Usar el PDF_PATH del servidor si existe, o construir uno si no
+                    const pdfPath = manifiesto.pdf_path 
+                    console.log('Ruta del PDF a usar:', pdfPath);
+
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${manifiesto.id}</td>
@@ -593,7 +599,7 @@
                             <button class="btn btn-sm btn-danger me-1" onclick="eliminarManifiesto('${manifiesto.id}')">
                                 <i class="fas fa-trash"></i> Eliminar
                             </button>
-                            <button class="btn btn-sm btn-info" onclick="verPDF('${manifiesto.pdf_path || ''}')">
+                            <button class="btn btn-sm btn-info" onclick="verPDF('${pdfPath}')">
                                 <i class="fas fa-file-pdf"></i> Ver PDF
                             </button>
                         </td>
@@ -648,13 +654,38 @@
             return;
         }
         
+        console.log('Ruta original del PDF:', pdfPath);
+        
         // Asegurarse de que la ruta comience con 'uploads'
         if (pdfPath.startsWith('/uploads/')) {
             pdfPath = pdfPath.substring(1); // Eliminar el slash inicial
         }
         
-        // Construir la URL completa para ver el PDF
-        const url = `/ver_pdf/${encodeURIComponent(pdfPath)}`;
+        // Extraer los componentes de la ruta
+        const partes = pdfPath.split('/');
+        console.log('Partes de la ruta:', partes);
+        
+        if (partes.length < 3) {
+            console.error('Ruta de PDF inválida:', pdfPath);
+            mostrarMensaje('Ruta de PDF inválida', 'error');
+            return;
+        }
+        
+        // Construir la ruta final asegurando que use la carpeta correcta
+        const carpeta = partes[1]; // '1' para la carpeta de manifiestos
+        const fecha = partes[2]; // La fecha de la carpeta (ej: 02-05-2025)
+        const nombreArchivo = partes[3] || partes[2]; // Si no hay nombre de archivo, usar la fecha
+        
+        // Construir la ruta final usando la estructura correcta
+        const rutaFinal = `uploads/${carpeta}/${fecha}/${nombreArchivo}`;
+        console.log('Ruta final del PDF:', rutaFinal);
+        
+        // Codificar cada parte de la ruta por separado
+        const encodedPath = rutaFinal.split('/').map(part => encodeURIComponent(part)).join('/');
+        console.log('Ruta codificada:', encodedPath);
+        
+        // Construir la URL completa con el prefijo /procesar_pdfs
+        const url = `/procesar_pdfs/ver_pdf/${encodedPath}`;
         console.log('Intentando abrir PDF en:', url);
         
         // Abrir el PDF en una nueva pestaña
@@ -724,6 +755,10 @@
                 tbody.innerHTML = '';
                 
                 filtrados.forEach(manifiesto => {
+                    // Usar el PDF_PATH del servidor si existe, o construir uno si no
+                    const pdfPath = manifiesto.pdf_path || `uploads/1/${manifiesto.fecha}/global ${manifiesto.placa} ID ${manifiesto.id}.pdf`;
+                    console.log('Ruta del PDF construida:', pdfPath);
+
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${manifiesto.id}</td>
@@ -744,7 +779,7 @@
                             <button class="btn btn-sm btn-danger me-1" onclick="eliminarManifiesto('${manifiesto.id}')">
                                 <i class="fas fa-trash"></i> Eliminar
                             </button>
-                            <button class="btn btn-sm btn-info" onclick="verPDF('${manifiesto.pdf_path || ''}')">
+                            <button class="btn btn-sm btn-info" onclick="verPDF('${pdfPath}')">
                                 <i class="fas fa-file-pdf"></i> Ver PDF
                             </button>
                         </td>
@@ -758,6 +793,77 @@
             .catch(error => {
                 console.error('Error al filtrar manifiestos:', error);
                 mostrarMensaje('Error al filtrar los manifiestos', 'error');
+            });
+    }
+
+    // Función para mostrar datos no procesados
+    function mostrarDatosNoProcesados() {
+        fetch('/procesar_pdfs/datos_no_procesados')
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Error al cargar los datos no procesados');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                const tbody = document.getElementById('datosNoProcesadosList');
+                if (!tbody) {
+                    console.error('No se encontró el elemento tbody para datos no procesados');
+                    return;
+                }
+
+                tbody.innerHTML = '';
+
+                if (!data || data.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="14" class="text-center">No hay datos no procesados disponibles.</td>';
+                    tbody.appendChild(row);
+                    return;
+                }
+
+                data.forEach(dato => {
+                    // Obtener la ruta del PDF correctamente
+                    const pdfPath = dato.PDF_PATH || dato.pdf_path || '';
+                    console.log('Ruta del PDF para el registro:', pdfPath);
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${dato.ID || dato.id || ''}</td>
+                        <td>${dato.PLACA || dato.placa || ''}</td>
+                        <td>${dato.CONDUCTOR || dato.conductor || ''}</td>
+                        <td>${dato.ORIGEN || dato.origen || ''}</td>
+                        <td>${dato.DESTINO || dato.destino || ''}</td>
+                        <td>${dato.FECHA || dato.fecha || ''}</td>
+                        <td>${dato.MES || dato.mes || ''}</td>
+                        <td>${dato.KOF || dato.kof || ''}</td>
+                        <td>${dato.REMESA || dato.remesa || ''}</td>
+                        <td>${dato.EMPRESA || dato.empresa || ''}</td>
+                        <td>${dato.VALOR_FLETE || dato.valor_flete || ''}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary me-1" onclick="editarDatoNoProcesado('${dato.ID || dato.id}')">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button class="btn btn-sm btn-success me-1" onclick="crearManifiestoDesdeNoProcesado('${dato.ID || dato.id}')">
+                                <i class="fas fa-plus"></i> Crear Manifiesto
+                            </button>
+                            <button class="btn btn-sm btn-info" onclick="verPDF('${pdfPath}')">
+                                <i class="fas fa-file-pdf"></i> Ver PDF
+                            </button>
+                        </td>
+                        <td class="text-danger">${dato.error || ''}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarMensaje('Error al cargar los datos no procesados: ' + error.message, 'error');
+                const tbody = document.getElementById('datosNoProcesadosList');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="14" class="text-center text-danger">Error al cargar los datos no procesados</td></tr>';
+                }
             });
     }
     </script>
